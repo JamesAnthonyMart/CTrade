@@ -1,9 +1,12 @@
 #pragma once
 
-#include "Portfolio.h"
 #include <vector>
 #include <string>
 #include <thread>
+#include <memory>
+
+#include "Portfolio.h"
+#include "Client.h"
 
 //The buy/sell signals are functions of current asset holdings, price of the asset, and available cash
 //m_buySignals.push_back([this](const std::string p_asset) -> bool {
@@ -12,30 +15,28 @@
 // 
 //});
 
-class Manager {
+class ClientManager {
 public:
-
-	//Initialization
-	void AddPortfolio(const Portfolio p_portfolio);
-	Portfolio* GetPortfolio(std::string p_name);
-
-	void Manage();
-	void PollOrdersComplete();
 
 	static bool userQuit;
 
+	void AddClient(std::shared_ptr<Client> p_client);
+
 private:
-	Manager();
-	~Manager();
+	ClientManager();
+	~ClientManager();
+
+	void _Manage();
+	void _PollCompleteOrders(const std::shared_ptr<Client> p_client);
 
 	std::thread managementThread;
 
-	std::vector<Portfolio> m_portfolios;
+	std::vector<std::shared_ptr<Client>> m_clients;
 
 public:
 	//Meyers' Singelton Implementation
-	static Manager& Get() {
-		static Manager M;
+	static ClientManager& Get() {
+		static ClientManager M;
 		return M;
 	}
 };

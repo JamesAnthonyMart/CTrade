@@ -1,4 +1,4 @@
-#include "Manager.h"
+#include "ClientManager.h"
 
 #include <algorithm>
 #include <Windows.h>
@@ -13,24 +13,33 @@ using std::endl;
 using std::string;
 
 
-bool Manager::userQuit = false;
+bool ClientManager::userQuit = false;
 
-Manager::Manager()
+ClientManager::ClientManager()
 {
-	managementThread = std::thread(&Manager::Manage, this);
+	managementThread = std::thread(&ClientManager::_Manage, this);
 }
 
-Manager::~Manager()
+ClientManager::~ClientManager()
 {
-	Manager::userQuit = true;
+	ClientManager::userQuit = true;
 	managementThread.join();
 }
 
-void Manager::Manage()
+void ClientManager::AddClient(std::shared_ptr<Client> p_client)
 {
-	while (!Manager::userQuit)
+	m_clients.push_back(p_client);
+}
+
+void ClientManager::_Manage()
+{
+	while (!ClientManager::userQuit)
 	{
-		cout << "Get order history, alert user if new order appeared." << endl;
+		std::for_each(m_clients.begin(), m_clients.end(), [this](Client& c) {
+			_PollCompleteOrders(c);
+		});
+		
+
 		cout << "Get currently open orders, update all open orders display." << endl;
 		cout << "Get orders configured for floating lures, update if necessary." << endl;
 		Sleep(5000);
@@ -38,35 +47,22 @@ void Manager::Manage()
 	//Updates all those asset prices
 	//_UpdateAllAssetPrices();
 
-	//For each portfolio, the manager determines what it should do based on buy/sell conditions, and updates the orders on Bittrex appropriately
+	//For each client, the manager determines what it should do based on buy/sell conditions, and updates the orders on Bittrex appropriately
 	//_UpdateOrders();
 }
 
-void Manager::AddPortfolio(const Portfolio p_portfolio)
+void ClientManager::_PollCompleteOrders(const std::shared_ptr<Client> p_client)
 {
-	if (std::find(m_portfolios.begin(), m_portfolios.end(), p_portfolio) == m_portfolios.end())
-	{
-		m_portfolios.push_back(p_portfolio);
-	}
+	cout << "Get order history, alert user if new order appeared." << endl;
+	//ExchangeManager::Get().GetOpenTransactions(client->ecxhangekeys)
+
 }
 
-Portfolio* Manager::GetPortfolio(std::string p_name)
-{
-	for (size_t i = 0; i < m_portfolios.size(); ++i)
-	{
-		if (m_portfolios[i].GetOwner() == p_name)
-		{
-			return &m_portfolios[i];
-		}
-	}
-	
-	return nullptr;
-}
 
-void Manager::PollOrdersComplete() 
-{
-	
-}
+
+
+
+
 
 
 //void Manager::_UpdateOrders()

@@ -16,48 +16,60 @@
     <Filter Include="Drivers">
       <UniqueIdentifier>{df5e49d3-6bb9-4896-9977-a16f2139a2e2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\GenServices">
+      <UniqueIdentifier>{935279bb-855e-4a5d-a072-bf803b89138f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GenServices">
+      <UniqueIdentifier>{70e1f6bf-3def-4258-a3a0-114cb1253d70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\GenPackages">
+      <UniqueIdentifier>{d1f0596b-50f8-4083-8769-f39ffbb3d38e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GenPackages">
+      <UniqueIdentifier>{69ebebc7-2ba2-44d0-a29d-48fa1ed05bf9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TransactionManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Asset.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ExchangeManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Manager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Portfolio.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Transaction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Drivers</Filter>
     </ClCompile>
+    <ClCompile Include="ExchangeManager.cpp">
+      <Filter>Source Files\GenServices</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset.cpp">
+      <Filter>Source Files\GenPackages</Filter>
+    </ClCompile>
+    <ClCompile Include="Portfolio.cpp">
+      <Filter>Source Files\GenPackages</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientManager.cpp">
+      <Filter>Source Files\GenServices</Filter>
+    </ClCompile>
+    <ClCompile Include="Transaction.cpp">
+      <Filter>Source Files\GenPackages</Filter>
+    </ClCompile>
+    <ClCompile Include="Client.cpp">
+      <Filter>Source Files\GenPackages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Portfolio.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Manager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TransactionManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ExchangeManager.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\GenServices</Filter>
     </ClInclude>
     <ClInclude Include="Asset.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\GenPackages</Filter>
+    </ClInclude>
+    <ClInclude Include="Portfolio.h">
+      <Filter>Header Files\GenPackages</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientManager.h">
+      <Filter>Header Files\GenServices</Filter>
     </ClInclude>
     <ClInclude Include="Transaction.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\GenPackages</Filter>
+    </ClInclude>
+    <ClInclude Include="Client.h">
+      <Filter>Header Files\GenPackages</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -2,10 +2,11 @@
 #include <string>
 
 #include "Portfolio.h"
-#include "Manager.h"
-
-using std::string;
-
+#include "ClientManager.h"
+/*
+	Had an idea - buy batmanheads.com, give this shit a web interface, allow anyone to sign up and create 
+		their portfolio and use dan's techniques to trade the crypto market. 
+*/
 
 
 
@@ -19,14 +20,9 @@ using std::string;
 #include <ctime>
 #include <sstream>
 #include <windows.h>
-//#include <Stringapiset.h> //for MultiByteToWideChar
-
 //converting from wstring to string
 #include <locale>
 #include <codecvt>
-
-//for cbegin and cend
-#include <iterator>
 
 using namespace ::pplx;
 using namespace utility;
@@ -36,6 +32,14 @@ using namespace web::http;
 using namespace web::http::client;
 using namespace web::json;
 
+
+
+
+
+
+
+
+using std::string;
 
 // CoinMarketCap integration if needed
 // string url = "http://api.coinmarketcap.com/v1/ticker/?limit=10";
@@ -201,19 +205,16 @@ pplx::task<void> HTTPGetAsync()
 int main()
 {	
 	/*    Create Portfolios    */
-	Portfolio portfolio("James");
-	portfolio.RegisterExchangeKey("Bittrex", "3a24d67d68db419eb29d6ba2d50f956b", "c04ad606e4f4ce98d7f687ac82fdec6");
-	portfolio.AddContactPhone("2676143317");
+	std::shared_ptr<Client> c1("James");
+	c1->RegisterExchangeKeys("Bittrex", "3a24d67d68db419eb29d6ba2d50f956b", "c04ad606e4f4ce98d7f687ac82fdec6");
+	c1->RegisterAlertPhone("2676143317");
+	c1->m_ManagementStrategy.NotifyOnTradeCompletion = true;
+
+	//Portfolio portfolio("LowRiskLowReward");
+	//Portfolio portfolio("HighRiskHighReward");	
 
 	/*    Give portfolios to manager    */
-	Manager::Get().AddPortfolio(portfolio);
-	
-	/*    Configure portfolio management    */
-	Manager::Get().GetPortfolio("James")->m_ManagementStrategy.NotifyOnTradeCompletion = true;
-	//Manager::Get().GetPortfolio("James").m_ManagementStrategy.SetDumpLures(true);
-
-	/*    Manage    */
-	//Manager::Get().Manage();
+	ClientManager::Get().AddClient(c1);
 	
 	//Quick test - calling wait - usually don't wanna do this
 	HTTPGetAsync().wait();

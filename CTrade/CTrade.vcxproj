@@ -118,20 +118,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Asset.cpp" />
+    <ClCompile Include="Client.cpp" />
     <ClCompile Include="ExchangeManager.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Manager.cpp" />
+    <ClCompile Include="ClientManager.cpp" />
     <ClCompile Include="Portfolio.cpp" />
     <ClCompile Include="Transaction.cpp" />
-    <ClCompile Include="TransactionManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Asset.h" />
+    <ClInclude Include="Client.h" />
     <ClInclude Include="ExchangeManager.h" />
-    <ClInclude Include="Manager.h" />
+    <ClInclude Include="ClientManager.h" />
     <ClInclude Include="Portfolio.h" />
     <ClInclude Include="Transaction.h" />
-    <ClInclude Include="TransactionManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
