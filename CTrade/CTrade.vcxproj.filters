@@ -71,6 +71,12 @@
     <ClInclude Include="Client.h">
       <Filter>Header Files\GenPackages</Filter>
     </ClInclude>
+    <ClInclude Include="StringUtil.h">
+      <Filter>Source Files\GenServices</Filter>
+    </ClInclude>
+    <ClInclude Include="HashUtil.h">
+      <Filter>Source Files\GenServices</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

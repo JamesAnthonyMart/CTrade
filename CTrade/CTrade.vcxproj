@@ -131,7 +131,9 @@
     <ClInclude Include="Client.h" />
     <ClInclude Include="ExchangeManager.h" />
     <ClInclude Include="ClientManager.h" />
+    <ClInclude Include="HashUtil.h" />
     <ClInclude Include="Portfolio.h" />
+    <ClInclude Include="StringUtil.h" />
     <ClInclude Include="Transaction.h" />
   </ItemGroup>
   <ItemGroup>
