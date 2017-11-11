@@ -11,7 +11,7 @@ using std::cout;
 using std::endl;
 
 using std::string;
-
+using std::shared_ptr;
 
 bool ClientManager::userQuit = false;
 
@@ -26,7 +26,7 @@ ClientManager::~ClientManager()
 	managementThread.join();
 }
 
-void ClientManager::AddClient(std::shared_ptr<Client> p_client)
+void ClientManager::AddClient(shared_ptr<Client> p_client)
 {
 	m_clients.push_back(p_client);
 }
@@ -35,7 +35,7 @@ void ClientManager::_Manage()
 {
 	while (!ClientManager::userQuit)
 	{
-		std::for_each(m_clients.begin(), m_clients.end(), [this](Client& c) {
+		std::for_each(m_clients.begin(), m_clients.end(), [this](shared_ptr<Client> c) {
 			_PollCompleteOrders(c);
 		});
 		
@@ -51,7 +51,7 @@ void ClientManager::_Manage()
 	//_UpdateOrders();
 }
 
-void ClientManager::_PollCompleteOrders(const std::shared_ptr<Client> p_client)
+void ClientManager::_PollCompleteOrders(const shared_ptr<Client> p_client)
 {
 	cout << "Get order history, alert user if new order appeared." << endl;
 	//ExchangeManager::Get().GetOpenTransactions(client->ecxhangekeys)

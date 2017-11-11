@@ -17,6 +17,7 @@
 #include <cpprest/json.h>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
+#include <openssl/evp.h>
 #include <ctime>
 #include <sstream>
 #include <windows.h>
@@ -58,7 +59,7 @@ string sha512(string p_SecretKey, string p_Message)
 	//Todo determine way to be more memory efficient
 	char key[10000]; 
 	char data[1024];
-	strcpy(key, p_SecretKey.c_str());
+	strcpy_s(key, p_SecretKey.c_str());
 	strncpy_s(data, p_Message.c_str(), sizeof(data));
 	data[sizeof(data) - 1] = 0;
 
@@ -71,24 +72,31 @@ string sha512(string p_SecretKey, string p_Message)
 	//=============================================
 	// Using sha1 hash engine here.
 	// You may use other hash engines. e.g EVP_md5(), EVP_sha224, EVP_sha512, etc
-	digest = HMAC(EVP_sha512(), key, strlen(key), (unsigned char*)data, strlen(data), NULL, NULL);
+	digest = HMAC(EVP_sha512(), key, static_cast<int>(strlen(key)), (unsigned char*)data, strlen(data), NULL, NULL);
 
-	//Print digest for debugging purposes
-	//printf("HMAC digest: ");
+	//===== When debugging ========================
+	//printf("HMAC digest:           ");
 	//for (int i = 0; i != SHA512_DIGEST_LENGTH; i++)
-		//printf("%02hhx", digest[i]);
+	//	printf("%02hhx", digest[i]);
 	//printf("\n");
+	//===== When debugging ========================
 
 	//SHA512 produces a 64-byte hash value which rendered as 128 characters.
 	// Change the length accordingly with your choosen hash engine
-	char mdString[SHA512_DIGEST_LENGTH*2+1];
+	size_t bufferSize = SHA512_DIGEST_LENGTH * 2 + 1;
+	char mdString[SHA512_DIGEST_LENGTH * 2 + 1];
+	int tempint = 0;
 	for (int i = 0; i < SHA512_DIGEST_LENGTH; i++)
-		sprintf(&mdString[i * 2], "%02hhx", digest[i]);
-	mdString[128] = '\0';
+	{	//sprintf and snprintf automatically append '\0'
+		//sprintf(&mdString[i * 2], "%02hhx", digest[i]);	//works
+		snprintf(&mdString[i * 2], sizeof(mdString), "%02hhx", digest[i]);
+	}
 
-	//printf("\nOnline HMAC digest: %s\n", mdString);
+	//===== When debugging ========================
+	//printf("\Converted HMAC digest: %s\n", mdString);
 	//printf("Size is %u characters long.\n", (unsigned)strlen(mdString));
-	//=============================================
+	//printf("And tempint = %d", tempint);
+	//===== When debugging ========================
 
 	string output = mdString;
 	return output;
@@ -164,6 +172,9 @@ pplx::task<void> HTTPGetAsync()
 					auto orderDetails = jarray[i];
 					auto orderUuid = orderDetails.at(U("OrderUuid")).as_string();
 					auto exchange = orderDetails.at(U("Exchange")).as_string();
+					
+					std::wcout << "Echange found: " << exchange << std::endl;
+					
 					auto orderType = orderDetails.at(U("OrderType")).as_string();
 					auto quantity = orderDetails.at(U("Quantity")).as_integer();
 					auto quantityRemaining = orderDetails.at(U("QuantityRemaining")).as_integer();
@@ -205,7 +216,7 @@ pplx::task<void> HTTPGetAsync()
 int main()
 {	
 	/*    Create Portfolios    */
-	std::shared_ptr<Client> c1("James");
+	std::shared_ptr<Client> c1 = std::make_shared<Client>("James");
 	c1->RegisterExchangeKeys("Bittrex", "3a24d67d68db419eb29d6ba2d50f956b", "c04ad606e4f4ce98d7f687ac82fdec6");
 	c1->RegisterAlertPhone("2676143317");
 	c1->m_ManagementStrategy.NotifyOnTradeCompletion = true;

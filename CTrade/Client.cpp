@@ -12,7 +12,7 @@ void Client::AddPortfolio(const Portfolio p_portfolio)
 	}
 }
 
-Portfolio* Client::GetPortfolio(std::string p_name)
+Portfolio* Client::GetPortfolio(string p_name)
 {
 	for (size_t i = 0; i < m_portfolios.size(); ++i)
 	{
@@ -30,20 +30,24 @@ void Client::RegisterExchangeKeys(string p_exchangeName, string p_exchangePublic
 	m_exchangeKeys[p_exchangeName] = std::pair<string, string>(p_exchangePublicKey, p_exchangePrivateKey);
 }
 
-std::string Client::GetPublicKey(std::string p_exchangeName)
+std::string Client::GetPublicKey(string p_exchangeName)
 {
+	string sReturn("UNKOWN");
 	auto it = m_exchangeKeys.find(p_exchangeName);
 	if (it != m_exchangeKeys.end())
 	{
-		return it->second.first;
+		sReturn = it->second.first;
 	}
+	return sReturn;
 }
 
-std::string Client::GetPrivateKey(std::string p_exchangeName)
+std::string Client::GetPrivateKey(string p_exchangeName)
 {
+	string sReturn("UNKNOWN");
 	auto it = m_exchangeKeys.find(p_exchangeName);
 	if (it != m_exchangeKeys.end())
 	{
-		return it->second.second;
+		sReturn = it->second.second;
 	}
+	return sReturn;
 }
