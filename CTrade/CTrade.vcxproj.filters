@@ -51,6 +51,9 @@
     <ClCompile Include="Client.cpp">
       <Filter>Source Files\GenPackages</Filter>
     </ClCompile>
+    <ClCompile Include="Exchange.cpp">
+      <Filter>Source Files\GenPackages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ExchangeManager.h">
@@ -78,6 +81,9 @@
       <Filter>Source Files\GenServices</Filter>
     </ClInclude>
     <ClInclude Include="Exceptions.h">
+      <Filter>Header Files\GenPackages</Filter>
+    </ClInclude>
+    <ClInclude Include="Exchange.h">
       <Filter>Header Files\GenPackages</Filter>
     </ClInclude>
   </ItemGroup>

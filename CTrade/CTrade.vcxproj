@@ -120,6 +120,7 @@
   <ItemGroup>
     <ClCompile Include="Asset.cpp" />
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="Exchange.cpp" />
     <ClCompile Include="ExchangeManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ClientManager.cpp" />
@@ -130,6 +131,7 @@
     <ClInclude Include="Asset.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="Exceptions.h" />
+    <ClInclude Include="Exchange.h" />
     <ClInclude Include="ExchangeManager.h" />
     <ClInclude Include="ClientManager.h" />
     <ClInclude Include="HashUtil.h" />
