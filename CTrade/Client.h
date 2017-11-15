@@ -28,6 +28,8 @@ public:
 	void RegisterAlertPhone(std::string p_phoneNumber) { m_phoneNumber = p_phoneNumber; }
 	void RegisterExchangeKeys(std::string p_exchangeName, std::string p_exchangeKey, std::string p_exchangePrivateKey);
 
+	void GetUsedExchanges(std::vector<std::string>& p_RegisteredExchanges);
+
 	std::string GetPublicKey(std::string p_exchangeName);
 	std::string GetPrivateKey(std::string p_exchangeName);
 

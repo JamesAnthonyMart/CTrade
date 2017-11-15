@@ -10,7 +10,11 @@ License: TBD
 
 #include <string>
 #include <vector>
+#include <map>
 #include <functional>
+#include <memory>
+
+#include <cpprest/http_client.h>
 
 #include "Transaction.h"
 
@@ -21,36 +25,42 @@ This class is an abstraction for an individual exchange like Bittrex or Poloniex
 */
 class Exchange {
 public:
-	Exchange(std::string p_name, std::string p_apiKey) : m_exchangeName(p_name), m_apiKey(p_apiKey) {}
-
-	void GetOpenTransactions(std::vector<Transaction>& p_transactions) { _GetOpenTransactions(p_transactions); }
-	void GetClosedTransactions(std::vector<Transaction>& p_transactions) { _GetClosedTransactions(p_transactions); }
+	Exchange(std::string p_name) : m_exchangeName(p_name) { }
+	~Exchange();
+	
+	std::string GetName() { return m_exchangeName; }
+	pplx::task<void> GetOpenOrders(std::string p_publicKey, std::string p_privateKey);
 
 protected:
-	virtual std::string _DefEndpointHome() = 0;
-	virtual std::string _DefEndpointGetOpenTransactions() = 0;
-	virtual std::string _DefEndpointGetClosedTransactions() = 0;
-
-	std::string m_apiKey;
+	virtual void _DefineURIs();
+	
+	//Currently supported exchange functions
+	virtual utility::string_t _GetRequestWithParameters_OpenOrders(std::string p_publicKey);
+	virtual void _GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders);
+	
 	std::string m_exchangeName;
 
-private:
-	std::function<void(std::vector<Transaction>&)> _GetOpenTransactions;
-	std::function<void(std::vector<Transaction>&)> _GetClosedTransactions;
-
+	std::string m_uriBase;
+	std::string m_uriOpenTransactions;
+	std::string m_uriTransactionHistory;
 };
-class BittrexClient : public Exchange {
+
+class Bittrex : public Exchange 
+{
 public:
-	BittrexClient(std::string p_name, std::string p_apiKey) : Exchange(p_name, p_apiKey) {  }
-	virtual ~BittrexClient() { }
+	Bittrex();
+	~Bittrex();
 
-	virtual std::string _DefEndpointHome() { return "https://www.bittrex.com/api"; }
-	virtual std::string _DefEndpointGetOpenTransactions() { return "/openTransactions/?apiKey="; }
-	virtual std::string _DefEndpointGetClosedTransactions() { return "/closedTransactions/?apiKey="; }
+protected:
+	virtual void _DefineURIs();
 
-private:
-
+	//Currently supported exchange functions
+	//virtual pplx::task<void> _GetOpenOrders(std::string p_publicKey, std::string p_privateKey);
+	virtual utility::string_t _GetRequestWithParameters_OpenOrders(std::string p_publicKey);
+	virtual void _GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders);
 };
+
+
 
 
 /*
@@ -66,18 +76,11 @@ public:
 		return E;
 	}
 
-	std::vector<Transaction> GetOpenTransactions(std::string p_exchangeId, std::string apiKey);
-
-	void OpenShort();
-	void OpenLong();
-	void CloseShort();
-	void CloseLong();
+	std::vector<Transaction> GetOpenTransactions(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey);
 
 private: 
 	ExchangeManager();
 	~ExchangeManager();
 
-	void _OnInit_CreateExchanges();
-
-	std::vector<Exchange*> m_exchanges;
+	std::vector<std::unique_ptr<Exchange>> m_exchanges;
 };

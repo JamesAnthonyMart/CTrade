@@ -77,6 +77,9 @@
     <ClInclude Include="HashUtil.h">
       <Filter>Source Files\GenServices</Filter>
     </ClInclude>
+    <ClInclude Include="Exceptions.h">
+      <Filter>Header Files\GenPackages</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -28,6 +28,9 @@ private:
 
 	void _Manage();
 	void _PollCompleteOrders(const std::shared_ptr<Client> p_client);
+	void _PollOpenOrders(const std::shared_ptr<Client> p_client);
+	void _ReconfigureFloatingLures(const std::shared_ptr<Client> p_client);
+
 
 	std::thread managementThread;
 

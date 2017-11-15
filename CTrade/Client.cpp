@@ -30,6 +30,15 @@ void Client::RegisterExchangeKeys(string p_exchangeName, string p_exchangePublic
 	m_exchangeKeys[p_exchangeName] = std::pair<string, string>(p_exchangePublicKey, p_exchangePrivateKey);
 }
 
+void Client::GetUsedExchanges(std::vector<std::string>& p_RegisteredExchanges)
+{
+	p_RegisteredExchanges.clear();
+	for (auto it = m_exchangeKeys.begin(); it != m_exchangeKeys.end(); ++it)
+	{
+		p_RegisteredExchanges.push_back(it->first);
+	}
+}
+
 std::string Client::GetPublicKey(string p_exchangeName)
 {
 	string sReturn("UNKOWN");

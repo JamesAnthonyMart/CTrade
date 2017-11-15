@@ -129,6 +129,7 @@
   <ItemGroup>
     <ClInclude Include="Asset.h" />
     <ClInclude Include="Client.h" />
+    <ClInclude Include="Exceptions.h" />
     <ClInclude Include="ExchangeManager.h" />
     <ClInclude Include="ClientManager.h" />
     <ClInclude Include="HashUtil.h" />

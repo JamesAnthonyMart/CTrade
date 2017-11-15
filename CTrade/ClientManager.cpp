@@ -1,17 +1,18 @@
-#include "ClientManager.h"
-
+#include <iostream>
+#include <vector>
 #include <algorithm>
 #include <Windows.h>
 
+#include "ClientManager.h"
 #include "ExchangeManager.h"
 
-//For console printing
-#include <iostream>
 using std::cout;
 using std::endl;
 
 using std::string;
+using std::vector;
 using std::shared_ptr;
+
 
 bool ClientManager::userQuit = false;
 
@@ -36,28 +37,34 @@ void ClientManager::_Manage()
 	while (!ClientManager::userQuit)
 	{
 		std::for_each(m_clients.begin(), m_clients.end(), [this](shared_ptr<Client> c) {
+			//todo: try { } catch (Exception NoApiKeysConfigured) { ... }
 			_PollCompleteOrders(c);
+			_PollOpenOrders(c);
+			_ReconfigureFloatingLures(c);
 		});
-		
-
-		cout << "Get currently open orders, update all open orders display." << endl;
-		cout << "Get orders configured for floating lures, update if necessary." << endl;
 		Sleep(5000);
 	}
-	//Updates all those asset prices
-	//_UpdateAllAssetPrices();
-
-	//For each client, the manager determines what it should do based on buy/sell conditions, and updates the orders on Bittrex appropriately
-	//_UpdateOrders();
 }
 
 void ClientManager::_PollCompleteOrders(const shared_ptr<Client> p_client)
 {
 	cout << "Get order history, alert user if new order appeared." << endl;
-	//ExchangeManager::Get().GetOpenTransactions(client->ecxhangekeys)
-
+	vector<string> usedExchanges;
+	p_client->GetUsedExchanges(usedExchanges);
+	for (auto exchange : usedExchanges)
+	{
+		ExchangeManager::Get().GetOpenTransactions(exchange, p_client->GetPublicKey(exchange), p_client->GetPrivateKey(exchange));
+	}
+}
+void ClientManager::_PollOpenOrders(const std::shared_ptr<Client> p_client)
+{
+	//cout << "Get currently open orders, update all open orders display." << endl;
 }
 
+void ClientManager::_ReconfigureFloatingLures(const std::shared_ptr<Client> p_client)
+{
+	//cout << "Get orders configured for floating lures, update if necessary." << endl;
+}
 
 
 
