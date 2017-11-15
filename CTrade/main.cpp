@@ -1,13 +1,12 @@
 /******************************************************************************************
-Had an idea - buy batmanheads.com, give this shit a web interface, allow anyone to sign up and create
-their portfolio and use dan's techniques to trade the crypto market.
+Had an idea - buy batmanheads.com, allow people to download for free over a web interface 
+so they can use dan's techniques to trade the crypto market.
 
 CoinMarketCap integration if needed
 string url = "http://api.coinmarketcap.com/v1/ticker/?limit=10";
 
 
 TODO:
-* Read in configuration file instead of just harcoding shit here.
 * Integrate Qt to give an actual UI to this program.
 ******************************************************************************************/
 
