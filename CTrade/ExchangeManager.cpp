@@ -40,16 +40,20 @@ ExchangeManager::ExchangeManager()
 	}
 }
 
-std::vector<Transaction> ExchangeManager::GetOpenTransactions(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey)
-{
+void ExchangeManager::GetOpenTransactions(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey, std::vector<Transaction>& p_openTransactions){
 	//p_exchangeId currently unused. All go to Bittrex.
+
+	p_openTransactions.clear();
 	for (size_t i = 0; i < m_exchanges.size(); ++i)
 	{
 		if (m_exchanges[i]->GetName() == p_exchangeId)
 		{
-			m_exchanges[i]->GetOpenOrders(p_publicKey, p_privateKey).wait();
+			std::shared_ptr<std::vector<Transaction>> exchangeOpenOrders = std::make_shared<std::vector<Transaction>>();
+			m_exchanges[i]->GetOpenOrders(p_publicKey, p_privateKey, exchangeOpenOrders).wait();
+			for (size_t j = 0; j < exchangeOpenOrders->size(); ++j)
+			{
+				p_openTransactions.push_back((*exchangeOpenOrders)[j]);
+			}
 		}
 	}
-
-	return std::vector<Transaction>();
 }

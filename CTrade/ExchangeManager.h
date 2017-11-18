@@ -24,12 +24,15 @@ The actual exchange being used should be irrelevant to the Manager, unless the m
 class ExchangeManager
 {
 public:
+
+	friend class Exchange;
+
 	static ExchangeManager& Get() {
 		static ExchangeManager E;
 		return E;
 	}
 
-	std::vector<Transaction> GetOpenTransactions(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey);
+	void GetOpenTransactions(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey, std::vector<Transaction>& p_openTransactions);
 
 private: 
 	ExchangeManager();

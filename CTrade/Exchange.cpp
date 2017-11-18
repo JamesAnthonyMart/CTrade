@@ -24,11 +24,12 @@ Exchange::~Exchange()
 }
 
 
-pplx::task<void> Exchange::GetOpenOrders(std::string p_publicKey, std::string p_privateKey)
+pplx::task<void> Exchange::GetOpenOrders(std::string p_publicKey, std::string p_privateKey, std::shared_ptr<std::vector<Transaction>> p_openTransactions)
 {
 	//  Todo - assert that m_uriBase isn't an empty string. 
 	//  If it is, I forgot to finish implementing a new Exchange.
 
+	p_openTransactions->clear();
 	web::uri baseUri = web::uri(StrUtil::s2ws(m_uriBase));
 	web::http::http_request request(web::http::methods::GET);
 
@@ -47,7 +48,7 @@ pplx::task<void> Exchange::GetOpenOrders(std::string p_publicKey, std::string p_
 	try {
 		return client.request(request)
 			.then(std::bind(&Exchange::ExtractJSON,					this, std::placeholders::_1))
-			.then(std::bind(&Exchange::_CreateTransactionFromJSON,	this, std::placeholders::_1));
+			.then(std::bind(&Exchange::_CreateTransactionsFromJSON,	this, std::placeholders::_1, p_openTransactions));
 	}
 	catch (const http_exception& e)
 	{
@@ -79,7 +80,7 @@ void Exchange::_InitURIs()
 	assert(false); // Child class must override this function
 }
 
-void Exchange::_CreateTransactionFromJSON(pplx::task<web::json::value> p_jsonValue)
+void Exchange::_CreateTransactionsFromJSON(pplx::task<web::json::value> p_jsonValue, std::shared_ptr<std::vector<Transaction>> p_transactions)
 {
 	assert(false); // Child class must override this function
 }
@@ -110,7 +111,7 @@ void Bittrex::_InitURIs()
 	m_uriTransactionHistory = "account/getorderhistory";
 }
 
-void Bittrex::_CreateTransactionFromJSON(pplx::task<web::json::value> p_jsonValue)
+void Bittrex::_CreateTransactionsFromJSON(pplx::task<web::json::value> p_jsonValue, std::shared_ptr<std::vector<Transaction>> p_transactions)
 {
 	const web::json::value& jsonResponse = p_jsonValue.get();
 	if (jsonResponse.at(U("result")).is_null())
@@ -127,13 +128,21 @@ void Bittrex::_CreateTransactionFromJSON(pplx::task<web::json::value> p_jsonValu
 			auto orderUuid = orderDetails.at(U("OrderUuid")).as_string();
 			auto exchange = orderDetails.at(U("Exchange")).as_string();
 
-			std::wcout << "Market found: " << exchange << std::endl;
+			
+
+			std::wstring fromAsset = U("Ticker_unable_to_be_parsed");
+			std::wstring toAsset = U("Ticker_unable_to_be_parsed");
+			if (exchange != U(""))
+			{
+				fromAsset = exchange.substr(0, exchange.find_first_of('-'));
+				toAsset = exchange.substr(exchange.find_first_of('-')+1, exchange.end() - exchange.begin());
+			}
 
 			auto orderType = orderDetails.at(U("OrderType")).as_string();
 			auto quantity = orderDetails.at(U("Quantity")).as_integer();
 			auto quantityRemaining = orderDetails.at(U("QuantityRemaining")).as_integer();
 			auto limit = orderDetails.at(U("Limit")).as_double();
-			auto opened = orderDetails.at(U("Opened")).as_string();
+			auto dateTimeOpened = orderDetails.at(U("Opened")).as_string();
 			auto isConditional = orderDetails.at(U("IsConditional")).as_bool();
 			std::wstring condition = U("NONE");
 			double conditionTarget = -1.0;
@@ -143,7 +152,21 @@ void Bittrex::_CreateTransactionFromJSON(pplx::task<web::json::value> p_jsonValu
 				conditionTarget = orderDetails.at(U("ConditionTarget")).as_double();
 			}
 
-			//Save this transaction somewhere?
+			std::wcout << "Market found: " << exchange << std::endl
+					   << "From asset: " << fromAsset << ", to asset: " << toAsset << std::endl
+					   << "Ordertype = " << orderType << std::endl
+					   << "Quantity = " << quantity << std::endl
+					   << "Limit = " << limit << std::endl
+					   << "Opened = " << dateTimeOpened << std::endl
+					   << std::endl;
+
+			ETransactionType e_orderType = (orderType == U("LIMIT_BUY")) ? ELimitBuy :
+									       (orderType == U("LIMIT_SELL")) ? ELimitSell 
+											: EUnsupportedType;
+
+			//Todo: p_transactions needs to be made into a pointer so it can update the right variable. Maybe have to propagate a shared ptr all the way through?
+			// I think the problem is that the vector reference being passed in to this goes out of scope when the parent function returns (this is in a separate thread than the parent)
+			p_transactions->push_back(Transaction(StrUtil::ws2s(orderUuid), StrUtil::ws2s(fromAsset), StrUtil::ws2s(toAsset), e_orderType, quantity, limit, StrUtil::ws2s(dateTimeOpened)));
 
 		}
 		catch (const web::json::json_exception e)

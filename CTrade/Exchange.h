@@ -4,6 +4,9 @@
 #include <map>
 #include <cpprest/http_client.h>
 
+#include "Transaction.h"
+
+
 class ExchangeManager;
 
 /*
@@ -17,7 +20,7 @@ public:
 	~Exchange();
 
 	std::string GetName() { return m_exchangeName; }
-	pplx::task<void> GetOpenOrders(std::string p_publicKey, std::string p_privateKey);
+	pplx::task<void> GetOpenOrders(std::string p_publicKey, std::string p_privateKey, std::shared_ptr<std::vector<Transaction>> p_openTransactions);
 	
 	pplx::task<web::json::value> ExtractJSON(web::http::http_response response);
 
@@ -26,7 +29,7 @@ protected:
 
 	//Must define all of these protected functions in each child class to fully support an exchange
 	virtual void _InitURIs();
-	virtual void _CreateTransactionFromJSON(pplx::task<web::json::value> p_jsonValue);
+	virtual void _CreateTransactionsFromJSON(pplx::task<web::json::value> p_jsonValue, std::shared_ptr<std::vector<Transaction>> p_transactions);
 		//Supported exchange functions:
 	virtual utility::string_t _GetRequestWithParameters_OpenOrders(std::string p_publicKey);
 	virtual void _GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders);
@@ -54,7 +57,7 @@ public:
 
 protected:
 	virtual void _InitURIs() override;
-	virtual void _CreateTransactionFromJSON(pplx::task<web::json::value> p_jsonValue) override;
+	virtual void _CreateTransactionsFromJSON(pplx::task<web::json::value> p_jsonValue, std::shared_ptr<std::vector<Transaction>> p_transactions) override;
 
 	virtual utility::string_t _GetRequestWithParameters_OpenOrders(std::string p_publicKey) override;
 	virtual void _GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders) override;

@@ -53,7 +53,9 @@ void ClientManager::_PollCompleteOrders(const shared_ptr<Client> p_client)
 	p_client->GetUsedExchanges(usedExchanges);
 	for (auto exchange : usedExchanges)
 	{
-		ExchangeManager::Get().GetOpenTransactions(exchange, p_client->GetPublicKey(exchange), p_client->GetPrivateKey(exchange));
+		vector<Transaction> openTransactions; 
+		ExchangeManager::Get().GetOpenTransactions(exchange, p_client->GetPublicKey(exchange), p_client->GetPrivateKey(exchange), openTransactions);
+		std::cout << "Number of open transactions = " << openTransactions.size() << std::endl;
 	}
 }
 void ClientManager::_PollOpenOrders(const std::shared_ptr<Client> p_client)
