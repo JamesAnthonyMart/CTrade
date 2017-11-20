@@ -3,14 +3,22 @@
 #include <exception>
 #include <string>
 
-class InvalidSignatureException : public std::exception
+class MalformedRequest : public std::exception
 {
 public: 
+	MalformedRequest() : std::exception(), m_message("No additional information provided.") {}
+	MalformedRequest(std::string p_message) : std::exception(), m_message(p_message) {}
+	void SetExceptionMessage(std::string p_message) { m_message = p_message; }
+	std::string GetExceptionMessage() { return m_message; }
+
 	virtual const char* what() const throw()
 	{
-		return "Exception: HttpRequest had invalid signature. Check hash";
+		return "Exception: HTTPRequest failed because of a malformed request.";
 	}
-} EInvalidSignature;
+
+private: 
+	std::string m_message;
+} EMalformedRequest;
 
 class BadHttpResponse : public std::exception
 {

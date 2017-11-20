@@ -16,9 +16,11 @@ enum ETransactionType {
 class Transaction {
 public:
 	Transaction(std::string p_transactionId, std::string p_fromAsset, std::string p_toAsset, ETransactionType p_transactionType,
-		int p_quantity, double p_limitPrice, std::string p_dateTimeOpened);
+		double p_quantity, double p_limitPrice, std::string p_dateTimeOpened);
 
 	bool   IsNetGain();
+
+	void Close(std::string p_closeTime);
 
 	double EarningsInUSD();
 	double EarningsPercentage();
@@ -30,7 +32,7 @@ private:
 	std::string m_fromAsset;
 	std::string m_toAsset;
 	ETransactionType m_transactionType;
-	int m_quantity;
+	double m_quantity;
 	double m_openPriceUSD;
 	std::string m_openTime;
 	ETransactionState m_transactionState;

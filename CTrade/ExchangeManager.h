@@ -33,6 +33,7 @@ public:
 	}
 
 	void GetOpenTransactions(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey, std::vector<Transaction>& p_openTransactions);
+	void GetTransactionHistory(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey, std::vector<Transaction>& p_transactionHistory);
 
 private: 
 	ExchangeManager();

@@ -57,3 +57,22 @@ void ExchangeManager::GetOpenTransactions(std::string p_exchangeId, std::string 
 		}
 	}
 }
+
+void ExchangeManager::GetTransactionHistory(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey, std::vector<Transaction>& p_transactionHistory)
+{
+	//p_exchangeId currently unused. All go to Bittrex.
+
+	p_transactionHistory.clear();
+	for (size_t i = 0; i < m_exchanges.size(); ++i)
+	{
+		if (m_exchanges[i]->GetName() == p_exchangeId)
+		{
+			std::shared_ptr<std::vector<Transaction>> exchangeTransHistory = std::make_shared<std::vector<Transaction>>();
+			m_exchanges[i]->GetTransactionHistory(p_publicKey, p_privateKey, exchangeTransHistory).wait();
+			for (size_t j = 0; j < exchangeTransHistory->size(); ++j)
+			{
+				p_transactionHistory.push_back((*exchangeTransHistory)[j]);
+			}
+		}
+	}
+}

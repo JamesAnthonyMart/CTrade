@@ -19,6 +19,7 @@ class ClientManager {
 public:
 
 	static bool userQuit;
+	static bool userPause;
 
 	void AddClient(std::shared_ptr<Client> p_client);
 
@@ -37,7 +38,7 @@ private:
 	std::vector<std::shared_ptr<Client>> m_clients;
 
 public:
-	//Meyers' Singelton Implementation
+	//Meyers' Singleton Implementation
 	static ClientManager& Get() {
 		static ClientManager M;
 		return M;

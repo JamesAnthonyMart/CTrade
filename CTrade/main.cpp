@@ -68,10 +68,14 @@ void HandleCommands()
 	std::map<std::string, std::function<void()>> commands;
 	bool bContinuePrompting = true;
 
-	std::function<void()> fcExit = std::bind([&bContinuePrompting]() {std::cout << "Stopping..." << std::endl; bContinuePrompting = false; });
-
+	std::function<void()> fcPause = std::bind([]() {std::cout << "[PAUSED]" << std::endl; ClientManager::Get().userPause = true; });
+	std::function<void()> fcResume = std::bind([]() {std::cout << "[RESUMING...]" << std::endl; ClientManager::Get().userPause = false; });
+	std::function<void()> fcExit = std::bind([&bContinuePrompting, fcResume]() {if (ClientManager::Get().userPause == true) fcResume(); std::cout << "[STOPPING...]" << std::endl; bContinuePrompting = false; });
+	
 	commands["STOP"] = fcExit;
 	commands["EXIT"] = fcExit;
+	commands["PAUSE"] = fcPause;
+	commands["RESUME"] = fcResume;
 
 	while (bContinuePrompting)
 	{
