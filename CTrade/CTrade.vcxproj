@@ -118,22 +118,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ArbitratorManager.cpp" />
     <ClCompile Include="Asset.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="Exchange.cpp" />
     <ClCompile Include="ExchangeManager.cpp" />
+    <ClCompile Include="FileManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ClientManager.cpp" />
     <ClCompile Include="Portfolio.cpp" />
     <ClCompile Include="Transaction.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ArbitratorManager.h" />
     <ClInclude Include="Asset.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="Exceptions.h" />
     <ClInclude Include="Exchange.h" />
     <ClInclude Include="ExchangeManager.h" />
     <ClInclude Include="ClientManager.h" />
+    <ClInclude Include="FileManager.h" />
     <ClInclude Include="HashUtil.h" />
     <ClInclude Include="Portfolio.h" />
     <ClInclude Include="StringUtil.h" />

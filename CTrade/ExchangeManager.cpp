@@ -3,6 +3,8 @@
 //Maybe move some of this garbage to an httpUtil or something
 #include "StringUtil.h"
 
+#include <cassert>
+
 using std::string;
 using std::make_unique;
 
@@ -28,6 +30,19 @@ using std::make_unique;
 ExchangeManager::~ExchangeManager() 
 {
 	//NOP Virtual destructor
+}
+
+bool ExchangeManager::_SupportsExchange(std::string p_exchange)
+{
+	for (size_t i = 0; i < m_exchanges.size(); ++i)
+	{
+		if (m_exchanges[i]->GetName() == p_exchange)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 ExchangeManager::ExchangeManager() 
@@ -75,4 +90,34 @@ void ExchangeManager::GetTransactionHistory(std::string p_exchangeId, std::strin
 			}
 		}
 	}
+}
+
+void ExchangeManager::GetSupportedExchangeNames(std::vector<std::string>& p_exchangeNames)
+{
+	p_exchangeNames.clear();
+	for (size_t i = 0; i < m_exchanges.size(); ++i)
+	{
+		p_exchangeNames.push_back(m_exchanges[i]->GetName());
+	}
+}
+
+double ExchangeManager::GetPriceOnExchange(std::string p_coinTicker, std::string p_exchange)
+{
+	assert(_SupportsExchange(p_exchange));
+
+	double price = -1.0;
+	for (size_t i = 0; i < m_exchanges.size(); ++i)
+	{
+		if (m_exchanges[i]->GetName() == p_exchange)
+		{
+			m_exchanges[i]->GetPrice(p_coinTicker, &price).wait();
+			return price;
+		}
+	}
+
+	//This doesn't make sense to hit. The first assert would catch the case where the exchange isn't supported,
+	//  and if the exchange IS supported, this should never get hit, right?
+	assert(false);
+	return price;
+
 }

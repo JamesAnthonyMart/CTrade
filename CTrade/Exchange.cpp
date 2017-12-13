@@ -82,6 +82,31 @@ pplx::task<void> Exchange::GetTransactionHistory(std::string p_publicKey, std::s
 		.then(std::bind(&Exchange::_ParseTransactionHistory, this, std::placeholders::_1, p_exchangeTransHistory));
 }
 
+pplx::task<void> Exchange::GetPrice(std::string p_ticker, double* p_price)
+{	
+	//  If you hit this, you probably forgot to finish implementing a new Exchange.
+	assert(m_uriBase != "");
+
+	web::uri baseUri = web::uri(StrUtil::s2ws(m_uriBase));
+	web::http::http_request request(web::http::methods::GET);
+
+	//Create web request with specific exchange parameters
+	request.set_request_uri(_GetRequestWithParameters_GetPrice(p_ticker));
+
+	//Add necessary headers
+	map<string, string> requestHeaders;
+	_GetAdditionalHeaders_GetPrice(requestHeaders);
+	for (auto header : requestHeaders)
+	{
+		request.headers().add(StrUtil::s2ws(header.first), StrUtil::s2ws(header.second));
+	}
+
+	web::http::client::http_client client(baseUri);
+	return client.request(request)
+		.then(std::bind(&Exchange::ExtractJSON, this, std::placeholders::_1))
+		.then(std::bind(&Exchange::_ParsePrice, this, std::placeholders::_1, p_price));
+}
+
 pplx::task<web::json::value> Exchange::ExtractJSON(web::http::http_response response)
 {
 	if (response.status_code() != status_codes::OK)
@@ -107,6 +132,11 @@ void Exchange::_ParseTransactionHistory(pplx::task<web::json::value> p_previousT
 	assert(false); // Child class must override this function
 }
 
+void Exchange::_ParsePrice(pplx::task<web::json::value> p_previousTask, double* p_price)
+{
+	assert(false); // Child class must override this function
+}
+
 utility::string_t Exchange::_GetRequestWithParameters_OpenOrders(std::string p_publicKey)
 {
 	assert(false); // Child class must override this function
@@ -119,12 +149,23 @@ utility::string_t Exchange::_GetRequestWithParameters_TransactionHistory(std::st
 	return utility::string_t(); // Silence the compiler
 }
 
+utility::string_t Exchange::_GetRequestWithParameters_GetPrice(std::string p_ticker)
+{
+	assert(false); // Child class must override this function
+	return utility::string_t(); // Silence the compiler
+}
+
 void Exchange::_GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
 {
 	assert(false); // Child class must override this function
 }
 
 void Exchange::_GetAdditionalHeaders_TransactionHistory(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
+{
+	assert(false); // Child class must override this function
+}
+
+void Exchange::_GetAdditionalHeaders_GetPrice(std::map<std::string, std::string>& p_additionalHeaders)
 {
 	assert(false); // Child class must override this function
 }
@@ -142,6 +183,7 @@ void Bittrex::_InitURIs()
 	m_uriBase = "https://bittrex.com/api/v1.1/";
 	m_uriOpenTransactions = "market/getopenorders";
 	m_uriTransactionHistory = "account/getorderhistory";
+	m_uriGetCoinInfo = "public/getmarketsummary";
 }
 
 void Bittrex::_ParseOpenTransactions(pplx::task<web::json::value> p_previousTask, std::shared_ptr<std::vector<Transaction>> p_transactions)
@@ -170,8 +212,8 @@ void Bittrex::_ParseOpenTransactions(pplx::task<web::json::value> p_previousTask
 											(orderType == "LIMIT_SELL") ? ELimitSell
 											: EUnsupportedType;
 
-			std::cout << dateTimeOpened << ":   " << orderType << " " << quantity << " " << toAsset 
-					  << " in market " << fromAsset << "-" << toAsset << " for " << limitValue << " each." << "\n\n";
+			//std::cout << dateTimeOpened << ":   " << orderType << " " << quantity << " " << toAsset 
+					  //<< " in market " << fromAsset << "-" << toAsset << " for " << limitValue << " each." << "\n\n";
 
 			p_transactions->push_back(Transaction(orderUuid, fromAsset, toAsset, e_orderType, quantity, limitValue, dateTimeOpened));
 
@@ -212,8 +254,8 @@ void Bittrex::_ParseTransactionHistory(pplx::task<web::json::value> p_previousTa
 											(orderType == "LIMIT_SELL") ? ELimitSell
 											: EUnsupportedType;
 
-			std::cout << dateTimeClosed << ":   " << orderType << " closed for " << quantity << " " << toAsset 
-					  << " in market " << fromAsset << "-" << toAsset << " for " << limitValue << " each." << "\n\n";
+			//std::cout << dateTimeClosed << ":   " << orderType << " closed for " << quantity << " " << toAsset 
+					  //<< " in market " << fromAsset << "-" << toAsset << " for " << limitValue << " each." << "\n\n";
 
 			Transaction t(orderUuid, fromAsset, toAsset, e_orderType, quantity, limitValue, dateTimeOpened);
 			t.Close(dateTimeClosed);
@@ -223,6 +265,22 @@ void Bittrex::_ParseTransactionHistory(pplx::task<web::json::value> p_previousTa
 		{
 			cout << "JSON Parsing failure." << endl;
 		}
+	}
+}
+
+void Bittrex::_ParsePrice(pplx::task<web::json::value> p_previousTask, double* p_price)
+{
+	const web::json::value& jsonResponse = p_previousTask.get();
+	if (_ResponseIndicatesFailure(jsonResponse)) return;
+
+	auto jarray = jsonResponse.at(U("result")).as_array();
+	for (int i = 0; i < jarray.size(); ++i)
+	{
+		auto tickerSummary = jarray[i];
+		*p_price = tickerSummary.at(U("Last")).as_double();
+
+		string marketName = StrUtil::ws2s(tickerSummary.at(U("MarketName")).as_string());
+		//std::cout << marketName << " price: " << *p_price << std::endl;
 	}
 }
 
@@ -244,6 +302,17 @@ utility::string_t Bittrex::_GetRequestWithParameters_TransactionHistory(std::str
 	fullRequestUri.append_query(U("apikey"), StrUtil::s2ws(p_publicKey));
 	std::stringstream ssNonce; ssNonce.str(""); ssNonce << std::time(nullptr);
 	fullRequestUri.append_query(U("nonce"), ssNonce.str().c_str());
+
+	auto temp = fullRequestUri.to_string();
+	return temp;
+}
+
+utility::string_t Bittrex::_GetRequestWithParameters_GetPrice(std::string p_ticker)
+{
+	//https://bittrex.com/api/v1.1/public/getmarketsummary?market=btc-ltc    
+	web::uri requestUri = web::uri(StrUtil::s2ws(m_uriGetCoinInfo));
+	web::uri_builder fullRequestUri(requestUri);
+	fullRequestUri.append_query(U("market"), U("btc-") + StrUtil::s2ws(p_ticker));
 
 	auto temp = fullRequestUri.to_string();
 	return temp;
@@ -271,6 +340,11 @@ void Bittrex::_GetAdditionalHeaders_TransactionHistory(std::string p_publicKey, 
 	std::string completeUri = StrUtil::ws2s(StrUtil::s2ws(m_uriBase).append(fullRequestUri.to_string()));
 
 	p_additionalHeaders["apisign"] = HashUtil::sha512(p_privateKey, completeUri);
+}
+
+void Bittrex::_GetAdditionalHeaders_GetPrice(std::map<std::string, std::string>& p_additionalHeaders)
+{
+	p_additionalHeaders.clear();
 }
 
 bool Bittrex::_ResponseIndicatesFailure(const web::json::value& p_jsonValue)

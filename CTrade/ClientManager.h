@@ -21,7 +21,7 @@ public:
 	static bool userQuit;
 	static bool userPause;
 
-	void AddClient(std::shared_ptr<Client> p_client);
+	bool AddClient(std::shared_ptr<Client> p_client);
 
 private:
 	ClientManager();
@@ -31,11 +31,13 @@ private:
 	void _PollCompleteOrders(const std::shared_ptr<Client> p_client);
 	void _PollOpenOrders(const std::shared_ptr<Client> p_client);
 	void _ReconfigureFloatingLures(const std::shared_ptr<Client> p_client);
+	void _CheckArbitrageOpportunities(const std::shared_ptr<Client> p_client);
 
 
 	std::thread managementThread;
 
 	std::vector<std::shared_ptr<Client>> m_clients;
+	FileManager fm;
 
 public:
 	//Meyers' Singleton Implementation

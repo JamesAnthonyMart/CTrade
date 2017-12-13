@@ -54,6 +54,12 @@
     <ClCompile Include="Exchange.cpp">
       <Filter>Source Files\GenPackages</Filter>
     </ClCompile>
+    <ClCompile Include="FileManager.cpp">
+      <Filter>Source Files\GenServices</Filter>
+    </ClCompile>
+    <ClCompile Include="ArbitratorManager.cpp">
+      <Filter>Source Files\GenServices</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ExchangeManager.h">
@@ -85,6 +91,12 @@
     </ClInclude>
     <ClInclude Include="Exchange.h">
       <Filter>Header Files\GenPackages</Filter>
+    </ClInclude>
+    <ClInclude Include="FileManager.h">
+      <Filter>Header Files\GenServices</Filter>
+    </ClInclude>
+    <ClInclude Include="ArbitratorManager.h">
+      <Filter>Header Files\GenServices</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

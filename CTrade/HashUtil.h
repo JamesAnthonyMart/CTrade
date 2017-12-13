@@ -55,6 +55,9 @@ public:
 		std::string output = mdString;
 		return output;
 	}
-
+	static std::string sha256(std::string p_SecretKey, std::string p_Message)
+	{
+		return "Unimplemented";
+	}
 
 };

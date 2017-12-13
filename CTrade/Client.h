@@ -5,21 +5,43 @@
 #include <map>
 
 #include "Portfolio.h"
+#include "FileManager.h"
 
 class ClientManager;
 
 struct ManagementStrategy
 {
-	ManagementStrategy() : NotifyOnTradeCompletion(false) {	}
+	ManagementStrategy() : NotifyOnTradeCompletion(false), EnableArbitrage(false) {	}
 
 	//Configurations
 	bool NotifyOnTradeCompletion;
+	bool EnableArbitrage;
 };
 
+struct ArbitrageConfiguration
+{
+	ArbitrageConfiguration() : OpenTrigger(-1.0), CloseTrigger(-1.0), AvailablePercentage(-1.0) {}
+
+	double OpenTrigger;
+	double CloseTrigger;
+	double AvailablePercentage;
+};
+
+class AuthObject {
+public:
+	AuthObject() : publicKey(""), privateKey(""), passphrase("") {}
+	AuthObject(std::string p_publicKey, std::string p_privateKey) : publicKey(p_publicKey), privateKey(p_privateKey), passphrase("") {}
+	std::string publicKey;
+	std::string privateKey;
+	std::string passphrase;
+};
 
 class Client {
 public:
-	Client(std::string p_ClientName) {}
+	Client() : m_clientName(""), m_phoneNumber("") {}
+	Client(std::string p_clientName) : m_clientName(p_clientName) {}
+	
+	void SetName(std::string p_name) { m_clientName = p_name; }
 	std::string GetName() { return m_clientName; }
 
 	void AddPortfolio(const Portfolio p_portfolio);
@@ -27,13 +49,17 @@ public:
 
 	void RegisterAlertPhone(std::string p_phoneNumber) { m_phoneNumber = p_phoneNumber; }
 	void RegisterExchangeKeys(std::string p_exchangeName, std::string p_exchangeKey, std::string p_exchangePrivateKey);
+	void RegisterExchangePassphrase(std::string p_exchangeName, std::string p_exchangePassphrase);
 
 	void GetUsedExchanges(std::vector<std::string>& p_RegisteredExchanges);
 
 	std::string GetPublicKey(std::string p_exchangeName);
 	std::string GetPrivateKey(std::string p_exchangeName);
+	std::string GetPassphrase(std::string p_exchangeName);
+	bool HasExchange(std::string p_exchangeName);
 
 	ManagementStrategy m_ManagementStrategy;
+	ArbitrageConfiguration m_ArbitrageConfiguration;
 
 private:
 	std::string m_clientName;
@@ -41,6 +67,6 @@ private:
 
 	std::vector<Portfolio> m_portfolios;
 	
-	//			name			pub key				priv key
-	std::map<std::string, std::pair<std::string, std::string>> m_exchangeKeys;
+	//			name	 AuthenticationObject
+	std::map<std::string, AuthObject> m_exchangeKeys;
 };

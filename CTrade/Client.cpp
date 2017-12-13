@@ -27,7 +27,16 @@ Portfolio* Client::GetPortfolio(string p_name)
 
 void Client::RegisterExchangeKeys(string p_exchangeName, string p_exchangePublicKey, string p_exchangePrivateKey)
 {
-	m_exchangeKeys[p_exchangeName] = std::pair<string, string>(p_exchangePublicKey, p_exchangePrivateKey);
+	m_exchangeKeys[p_exchangeName] = AuthObject(p_exchangePublicKey, p_exchangePrivateKey);
+}
+
+void Client::RegisterExchangePassphrase(std::string p_exchangeName, std::string p_exchangePassphrase)
+{
+	auto it = m_exchangeKeys.find(p_exchangeName);
+	if (it != m_exchangeKeys.end())
+	{
+		it->second.passphrase = p_exchangePassphrase;
+	}
 }
 
 void Client::GetUsedExchanges(std::vector<std::string>& p_RegisteredExchanges)
@@ -45,7 +54,7 @@ std::string Client::GetPublicKey(string p_exchangeName)
 	auto it = m_exchangeKeys.find(p_exchangeName);
 	if (it != m_exchangeKeys.end())
 	{
-		sReturn = it->second.first;
+		sReturn = it->second.publicKey;
 	}
 	return sReturn;
 }
@@ -56,7 +65,23 @@ std::string Client::GetPrivateKey(string p_exchangeName)
 	auto it = m_exchangeKeys.find(p_exchangeName);
 	if (it != m_exchangeKeys.end())
 	{
-		sReturn = it->second.second;
+		sReturn = it->second.privateKey;
 	}
 	return sReturn;
+}
+
+std::string Client::GetPassphrase(string p_exchangeName)
+{
+	string sReturn("UNKNOWN");
+	auto it = m_exchangeKeys.find(p_exchangeName);
+	if (it != m_exchangeKeys.end())
+	{
+		sReturn = it->second.passphrase;
+	}
+	return sReturn;
+}
+
+bool Client::HasExchange(std::string p_exchangeName)
+{
+	return GetPublicKey(p_exchangeName) != "";
 }

@@ -34,10 +34,15 @@ public:
 
 	void GetOpenTransactions(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey, std::vector<Transaction>& p_openTransactions);
 	void GetTransactionHistory(std::string p_exchangeId, std::string p_publicKey, std::string p_privateKey, std::vector<Transaction>& p_transactionHistory);
+	
+	void GetSupportedExchangeNames(std::vector<std::string>& p_exchangeNames);
+	double GetPriceOnExchange(std::string p_coinTicker, std::string p_exchange);
 
 private: 
 	ExchangeManager();
 	~ExchangeManager();
+
+	bool _SupportsExchange(std::string p_exchange);
 
 	std::vector<std::unique_ptr<Exchange>> m_exchanges;
 };
