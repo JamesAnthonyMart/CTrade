@@ -29,7 +29,10 @@ public:
 	pplx::task<web::json::value> ExtractJSON(web::http::http_response response);
 
 	friend class ExchangeManager;
+
 protected:
+	std::string _GetNonce();
+	std::string _GenerateRequestUri(std::string p_uriBase, std::vector<std::pair<std::string, std::string>> p_parameters);
 
 	//Must define all of these protected functions in each child class to fully support an exchange
 	virtual void _InitURIs();
@@ -38,11 +41,11 @@ protected:
 	virtual void _ParsePrice(pplx::task<web::json::value> p_previousTask, double* p_price);
 
 		//Supported exchange functions:
-	virtual utility::string_t _GetRequestWithParameters_OpenOrders(std::string p_publicKey);
+	virtual utility::string_t _GetRequestWithParameters(std::string p_functionId, std::string p_publicKey);
 	virtual utility::string_t _GetRequestWithParameters_TransactionHistory(std::string p_publicKey);
 	virtual utility::string_t _GetRequestWithParameters_GetPrice(std::string p_ticker);
 
-	virtual void _GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders);
+	virtual void _GetAdditionalHeaders(std::string p_functionId, std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders);
 	virtual void _GetAdditionalHeaders_TransactionHistory(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders);
 	virtual void _GetAdditionalHeaders_GetPrice(std::map<std::string, std::string>& p_additionalHeaders);\
 
@@ -51,6 +54,9 @@ protected:
 	std::string m_uriOpenTransactions;
 	std::string m_uriTransactionHistory;
 	std::string m_uriGetCoinInfo;
+
+private:
+	web::http::client::http_client _GetHttpClient();
 };
 
 
@@ -68,18 +74,18 @@ public:
 	Bittrex();
 	~Bittrex();
 
-protected:
+protected:	
 	virtual void _InitURIs() override;
 
 	virtual void _ParseOpenTransactions(pplx::task<web::json::value> p_previousTask, std::shared_ptr<std::vector<Transaction>> p_transactions) override;
 	virtual void _ParseTransactionHistory(pplx::task<web::json::value> p_previousTask, std::shared_ptr<std::vector<Transaction>> p_transactions) override;
 	virtual void _ParsePrice(pplx::task<web::json::value> p_previousTask, double* p_price) override;
 
-	virtual utility::string_t _GetRequestWithParameters_OpenOrders(std::string p_publicKey) override;
+	virtual utility::string_t _GetRequestWithParameters(std::string p_functionId, std::string p_publicKey) override;
 	virtual utility::string_t _GetRequestWithParameters_TransactionHistory(std::string p_publicKey) override;
 	virtual utility::string_t _GetRequestWithParameters_GetPrice(std::string p_ticker) override;
 
-	virtual void _GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders) override;
+	virtual void _GetAdditionalHeaders(std::string p_functionId, std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders) override;
 	virtual void _GetAdditionalHeaders_TransactionHistory(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders) override;
 	virtual void _GetAdditionalHeaders_GetPrice(std::map<std::string, std::string>& p_additionalHeaders) override;
 

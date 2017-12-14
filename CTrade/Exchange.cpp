@@ -29,26 +29,23 @@ Exchange::~Exchange()
 
 pplx::task<void> Exchange::GetOpenOrders(std::string p_publicKey, std::string p_privateKey, std::shared_ptr<std::vector<Transaction>> p_openTransactions)
 {
-	//  If you hit this, you probably forgot to finish implementing a new Exchange.
-	assert(m_uriBase != "");
-
 	p_openTransactions->clear();
-	web::uri baseUri = web::uri(StrUtil::s2ws(m_uriBase));
+	
+	//Create base request
 	web::http::http_request request(web::http::methods::GET);
 
 	//Create web request with specific exchange parameters
-	request.set_request_uri(_GetRequestWithParameters_OpenOrders(p_publicKey));
+	request.set_request_uri(_GetRequestWithParameters("OpenOrders", p_publicKey));
 
 	//Add necessary headers
 	map<string, string> requestHeaders;
-	_GetAdditionalHeaders_OpenOrders(p_publicKey, p_privateKey, requestHeaders);
+	_GetAdditionalHeaders("OpenOrders", p_publicKey, p_privateKey, requestHeaders);
 	for (auto header : requestHeaders)
 	{
 		request.headers().add(StrUtil::s2ws(header.first), StrUtil::s2ws(header.second));
 	}
 
-	web::http::client::http_client client(baseUri);
-	return client.request(request)
+	return _GetHttpClient().request(request)
 		.then(std::bind(&Exchange::ExtractJSON,					this, std::placeholders::_1))
 		.then(std::bind(&Exchange::_ParseOpenTransactions,	this, std::placeholders::_1, p_openTransactions));
 
@@ -117,6 +114,28 @@ pplx::task<web::json::value> Exchange::ExtractJSON(web::http::http_response resp
 	return response.extract_json();
 }
 
+std::string Exchange::_GetNonce()
+{
+	std::stringstream ssNonce; 
+	ssNonce.str(""); 
+	ssNonce << std::time(nullptr);
+	return ssNonce.str();
+}
+
+std::string Exchange::_GenerateRequestUri(std::string p_uriBase, std::vector<std::pair<std::string, std::string>> p_parameters)
+{
+	web::uri requestUri = web::uri(StrUtil::s2ws(p_uriBase));
+	web::uri_builder fullRequestUri(requestUri);
+	for (size_t i = 0; i < p_parameters.size(); ++i)
+	{
+		std::string key = p_parameters[i].first;
+		std::string value = p_parameters[i].second;
+		fullRequestUri.append_query(StrUtil::s2ws(key), StrUtil::s2ws(value));
+	}
+
+	return StrUtil::ws2s(fullRequestUri.to_string());
+}
+
 void Exchange::_InitURIs()
 {
 	assert(false); // Child class must override this function
@@ -137,10 +156,10 @@ void Exchange::_ParsePrice(pplx::task<web::json::value> p_previousTask, double* 
 	assert(false); // Child class must override this function
 }
 
-utility::string_t Exchange::_GetRequestWithParameters_OpenOrders(std::string p_publicKey)
+utility::string_t Exchange::_GetRequestWithParameters(std::string p_functionId, std::string p_publicKey)
 {
 	assert(false); // Child class must override this function
-	return utility::string_t(); // Silence the compiler
+	return utility::string_t();
 }
 
 utility::string_t Exchange::_GetRequestWithParameters_TransactionHistory(std::string p_publicKey)
@@ -155,7 +174,7 @@ utility::string_t Exchange::_GetRequestWithParameters_GetPrice(std::string p_tic
 	return utility::string_t(); // Silence the compiler
 }
 
-void Exchange::_GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
+void Exchange::_GetAdditionalHeaders(std::string p_functionId, std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
 {
 	assert(false); // Child class must override this function
 }
@@ -168,6 +187,15 @@ void Exchange::_GetAdditionalHeaders_TransactionHistory(std::string p_publicKey,
 void Exchange::_GetAdditionalHeaders_GetPrice(std::map<std::string, std::string>& p_additionalHeaders)
 {
 	assert(false); // Child class must override this function
+}
+
+web::http::client::http_client Exchange::_GetHttpClient()
+{
+	//  If you hit this, you probably forgot to finish implementing a new Exchange.
+	assert(m_uriBase != "");
+	web::uri baseUri = web::uri(StrUtil::s2ws(m_uriBase));
+	web::http::client::http_client client(baseUri);
+	return client;
 }
 
 
@@ -284,15 +312,19 @@ void Bittrex::_ParsePrice(pplx::task<web::json::value> p_previousTask, double* p
 	}
 }
 
-utility::string_t Bittrex::_GetRequestWithParameters_OpenOrders(std::string p_publicKey)
+utility::string_t Bittrex::_GetRequestWithParameters(std::string p_functionId, std::string p_publicKey)
 {
-	web::uri requestUri = web::uri(StrUtil::s2ws(m_uriOpenTransactions));
-	web::uri_builder fullRequestUri(requestUri);
-	fullRequestUri.append_query(U("apikey"), StrUtil::s2ws(p_publicKey));
-	std::stringstream ssNonce; ssNonce.str(""); ssNonce << std::time(nullptr);
-	fullRequestUri.append_query(U("nonce"), ssNonce.str().c_str());
+	std::string uriBase = "";
+	std::vector<std::pair<std::string, std::string>> parameters;
 
-	return fullRequestUri.to_string();
+	if (p_functionId == "OpenOrders")
+	{
+		uriBase = m_uriOpenTransactions;
+		parameters.push_back(std::make_pair("apikey", p_publicKey));
+		parameters.push_back(std::make_pair("nonce", _GetNonce()));
+	}
+	
+	return StrUtil::s2ws(_GenerateRequestUri(uriBase, parameters));
 }
 
 utility::string_t Bittrex::_GetRequestWithParameters_TransactionHistory(std::string p_publicKey)
@@ -318,14 +350,24 @@ utility::string_t Bittrex::_GetRequestWithParameters_GetPrice(std::string p_tick
 	return temp;
 }
 
-void Bittrex::_GetAdditionalHeaders_OpenOrders(std::string p_publicKey, std::string p_privateKey, map<string, string>& p_additionalHeaders)
+void Bittrex::_GetAdditionalHeaders(std::string p_functionId, std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
 {
 	p_additionalHeaders.clear();
-	web::uri requestUri = web::uri(StrUtil::s2ws(m_uriOpenTransactions));
-	web::uri_builder fullRequestUri(requestUri);
-	std::string completeUri = StrUtil::ws2s(StrUtil::s2ws(m_uriBase).append(_GetRequestWithParameters_OpenOrders(p_publicKey)));
+	string uri = "";
 
-	p_additionalHeaders["apisign"] = HashUtil::sha512(p_privateKey, completeUri);
+	if (p_functionId == "OpenOrders")
+	{	
+		uri = m_uriOpenTransactions;
+	}
+
+	//Todo refactoring - Move the below to base class
+	web::uri requestUri = web::uri(StrUtil::s2ws(uri));
+	web::uri_builder fullRequestUri(requestUri);
+	auto requestWithParameters = _GetRequestWithParameters(p_functionId, p_publicKey);
+	std::string completeUri = StrUtil::ws2s(StrUtil::s2ws(m_uriBase).append(requestWithParameters));
+	
+	//But not this
+	p_additionalHeaders["apisign"] = HashUtil::sha512(p_privateKey, completeUri);	
 }
 
 void Bittrex::_GetAdditionalHeaders_TransactionHistory(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
