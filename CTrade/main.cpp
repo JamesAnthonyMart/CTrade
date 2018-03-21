@@ -7,8 +7,8 @@ string url = "http://api.coinmarketcap.com/v1/ticker/?limit=10";
 
 
 TODO:
-* Integrate Qt to give an actual UI to this program.
 * Finish updating the client's file with transactions from their transaction history
+* Integrate Qt to give an actual UI to this program.
 * Alert the client by their preferred alert method whenever a new transaction is logged 
     in the transaction history.
 * Finish the ability to reconfigure floating lures in Bittrex for the client
