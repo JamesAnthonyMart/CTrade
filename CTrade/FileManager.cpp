@@ -9,13 +9,14 @@
 
 #include "Client.h"
 #include "Transaction.h"
+#include "Output.h"
 
 
 using std::cout;
 using std::endl;
 using std::vector;
 
-FileManager::FileManager()
+FileManager::FileManager() : m_clientDataFilePath("")
 {
 	m_workingFilePath = FileManager::_GetCurrentWorkingDir();
 }
@@ -23,7 +24,7 @@ FileManager::FileManager()
 bool FileManager::RecordTransactionsInFile(std::string p_fileName, const std::vector<std::shared_ptr<Transaction>>& p_transactions)
 {	
 	pugi::xml_document doc;
-	_GetDocument(p_fileName, doc);
+	bool bFileLoaded = _GetDocument(p_fileName, doc);
 
 	/*pugi::xml_node TransactionHistory = doc.child("TransactionHistory");
 
@@ -52,22 +53,49 @@ bool FileManager::RecordTransactionsInFile(std::string p_fileName, const std::ve
 
 		std::cout << std::endl;
 	}
-	//Do it without the damn walker
+	
 	*/
 
 	return true;
 }
 
-void FileManager::CreateClient(std::shared_ptr<Client> p_client, std::string p_fileName)
+bool FileManager::LoadClientData(std::shared_ptr<Client> p_client, std::string p_clientName)
 {	
+	if (m_clientDataFilePath == "")
+	{
+		Output::PrintLn("No client data file specified. Cannot load client.");
+		return false;
+	}
+
 	pugi::xml_document doc;
-	_GetDocument(p_fileName, doc);
+	bool bDocumentLoaded = _GetDocument(m_clientDataFilePath, doc);
+	if (!bDocumentLoaded)
+	{
+		Output::PrintLnErr("Problem loading file " + m_clientDataFilePath + ". Are you sure it exists?");
+		return false;
+	}
+
 	
+	//Find the client in the file
 	pugi::xml_node ClientNode = doc.child("Client");
-	
-	//Get name
-	std::string sClientName = ClientNode.attribute("name").value();
-	p_client->SetName(sClientName);
+	bool bFound = false;
+	while(ClientNode)
+	{
+		std::string sClientName = ClientNode.attribute("name").value();
+		if (sClientName == p_clientName)
+		{
+			bFound = true;
+			p_client->SetName(sClientName);
+			break; //Client has been found;
+		}
+		
+		ClientNode = ClientNode.next_sibling();
+	}
+	if (!bFound)
+	{
+		Output::PrintLnErr("No Client by the name of " + p_clientName + " can be found!");
+		return false;
+	}
 
 	//Get phone number
 	std::string phoneNumber = ClientNode.attribute("phoneNumber").value();
@@ -109,6 +137,13 @@ void FileManager::CreateClient(std::shared_ptr<Client> p_client, std::string p_f
 			p_client->m_ArbitrageConfiguration.AvailablePercentage = availablePercentage;
 		}
 	}
+
+	return true;
+}
+
+void FileManager::ConfigureClientDataFile(std::string p_clientDataFilePath)
+{
+	m_clientDataFilePath = p_clientDataFilePath;
 }
 
 std::string FileManager::_GetCurrentWorkingDir()
@@ -120,7 +155,7 @@ std::string FileManager::_GetCurrentWorkingDir()
 	return current_working_dir;
 }
 
-void FileManager::_GetDocument(std::string p_fileName, pugi::xml_document& p_doc)
+bool FileManager::_GetDocument(std::string p_fileName, pugi::xml_document& p_doc)
 {
 	pugi::xml_parse_result result = p_doc.load_file(p_fileName.c_str());
 
@@ -131,10 +166,12 @@ void FileManager::_GetDocument(std::string p_fileName, pugi::xml_document& p_doc
 
 		if (result.status != pugi::xml_parse_status::status_ok)
 		{
-			assert(false);	//Todo - this assert is unacceptable for production program. At least 
-							// alert the user that there is a problem reading the file.
+			Output::PrintLnErr("Unable to create file" + p_fileName);
+			return false;
 		}
 	}
+
+	return true;
 }
 
 void FileManager::_CreateFile(pugi::xml_document& p_document, std::string p_fileName)

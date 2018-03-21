@@ -139,6 +139,7 @@
     <ClInclude Include="ClientManager.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="HashUtil.h" />
+    <ClInclude Include="Output.h" />
     <ClInclude Include="Portfolio.h" />
     <ClInclude Include="StringUtil.h" />
     <ClInclude Include="Transaction.h" />

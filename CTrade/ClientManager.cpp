@@ -34,9 +34,9 @@ ClientManager::~ClientManager()
 bool ClientManager::AddClient(shared_ptr<Client> p_client)
 {
 	bool clientAlreadyExists = false;
-	for (std::shared_ptr<Client> pclient : m_clients)
+	for (std::shared_ptr<Client> client : m_clients)
 	{
-		if (pclient->GetName() == p_client->GetName())
+		if (client->GetName() == p_client->GetName())
 		{
 			clientAlreadyExists = true;
 			break;

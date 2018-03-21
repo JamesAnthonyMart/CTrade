@@ -98,6 +98,9 @@
     <ClInclude Include="ArbitratorManager.h">
       <Filter>Header Files\GenServices</Filter>
     </ClInclude>
+    <ClInclude Include="Output.h">
+      <Filter>Header Files\GenServices</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

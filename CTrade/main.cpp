@@ -22,6 +22,7 @@ TODO:
 
 #include "Portfolio.h"
 #include "ClientManager.h"
+#include "Output.h"
 
 /*Temporary includes for file read*/
 #include <sstream>
@@ -35,12 +36,16 @@ void _TemporaryGetClientDataFromFile(std::vector<std::string> &clientdata);
 
 int main()
 {	
-	std::shared_ptr<Client> c1 = std::make_shared<Client>();
 	FileManager fm;
-	fm.CreateClient(c1, "C:\\Users\\James\\Google Drive\\Desktop\\clientdata.xml");
-
-	//Give the manager this client
-	ClientManager::Get().AddClient(c1);
+	fm.ConfigureClientDataFile("C:\\Users\\James\\Google Drive\\Desktop\\clientdata.xml");
+	
+	std::shared_ptr<Client> c1 = std::make_shared<Client>();
+	bool clientExists = fm.LoadClientData(c1, "James");
+	if (clientExists)
+	{
+		//Give the manager this client
+		ClientManager::Get().AddClient(c1);
+	}
 
 	//Handle console commands for client input
 	HandleCommands();
@@ -51,9 +56,9 @@ void HandleCommands()
 	std::map<std::string, std::function<void()>> commands;
 	bool bContinuePrompting = true;
 
-	std::function<void()> fcPause = std::bind([]() {std::cout << "[PAUSED]" << std::endl; ClientManager::Get().userPause = true; });
-	std::function<void()> fcResume = std::bind([]() {std::cout << "[RESUMING...]\n" << std::endl; ClientManager::Get().userPause = false; });
-	std::function<void()> fcExit = std::bind([&bContinuePrompting, fcResume]() {if (ClientManager::Get().userPause == true) fcResume(); std::cout << "[STOPPING...]" << std::endl; bContinuePrompting = false; });
+	std::function<void()> fcPause = std::bind([]() {Output::PrintLn("[PAUSED]"); ClientManager::Get().userPause = true; });
+	std::function<void()> fcResume = std::bind([]() {Output::PrintLn("[RESUMING...]\n"); ClientManager::Get().userPause = false; });
+	std::function<void()> fcExit = std::bind([&bContinuePrompting, fcResume]() {if (ClientManager::Get().userPause == true) fcResume(); Output::PrintLn("[STOPPING...]"); bContinuePrompting = false; });
 	
 	commands["STOP"] = fcExit;
 	commands["EXIT"] = fcExit;

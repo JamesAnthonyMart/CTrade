@@ -31,56 +31,33 @@ pplx::task<void> Exchange::GetOpenOrders(std::string p_publicKey, std::string p_
 {
 	p_openTransactions->clear();
 	
-	//Create base request
-	web::http::http_request request(web::http::methods::GET);
+	string functionId = "OpenOrders";
+	web::http::http_request request = _GetAuthenticatedRequest(p_publicKey, p_privateKey, functionId);
 
-	//Create web request with specific exchange parameters
-	request.set_request_uri(_GetRequestWithParameters("OpenOrders", p_publicKey));
-
-	//Add necessary headers
-	map<string, string> requestHeaders;
-	_GetAdditionalHeaders("OpenOrders", p_publicKey, p_privateKey, requestHeaders);
-	for (auto header : requestHeaders)
-	{
-		request.headers().add(StrUtil::s2ws(header.first), StrUtil::s2ws(header.second));
-	}
-
+	//Handle web response
 	return _GetHttpClient().request(request)
-		.then(std::bind(&Exchange::ExtractJSON,					this, std::placeholders::_1))
-		.then(std::bind(&Exchange::_ParseOpenTransactions,	this, std::placeholders::_1, p_openTransactions));
-
+		.then(std::bind(&Exchange::ExtractJSON,		   this, std::placeholders::_1))
+		.then(std::bind(&Exchange::_ParseTransactions, this, std::placeholders::_1, functionId, p_openTransactions));
 }
 
 pplx::task<void> Exchange::GetTransactionHistory(std::string p_publicKey, std::string p_privateKey, std::shared_ptr<std::vector<Transaction>> p_exchangeTransHistory)
 {
-	//https://bittrex.com/api/v1.1/account/getorderhistory
-	
-	assert(m_uriBase != "");
-
 	p_exchangeTransHistory->clear();
-	web::uri baseUri = web::uri(StrUtil::s2ws(m_uriBase));
-	web::http::http_request request(web::http::methods::GET);
 
-	//Create web request with specific exchange parameters
-	request.set_request_uri(_GetRequestWithParameters_TransactionHistory(p_publicKey));
+	string functionId = "TransactionHistory";
+	web::http::http_request request = _GetAuthenticatedRequest(p_publicKey, p_privateKey, functionId);
 
-	//Add necessary headers
-	map<string, string> requestHeaders;
-	_GetAdditionalHeaders_TransactionHistory(p_publicKey, p_privateKey, requestHeaders);
-	for (auto header : requestHeaders)
-	{
-		request.headers().add(StrUtil::s2ws(header.first), StrUtil::s2ws(header.second));
-	}
-
-	web::http::client::http_client client(baseUri);
-	
-	return client.request(request)
+	//Handle web response
+	return _GetHttpClient().request(request)
 		.then(std::bind(&Exchange::ExtractJSON, this, std::placeholders::_1))
-		.then(std::bind(&Exchange::_ParseTransactionHistory, this, std::placeholders::_1, p_exchangeTransHistory));
+		.then(std::bind(&Exchange::_ParseTransactions, this, std::placeholders::_1, functionId, p_exchangeTransHistory));
 }
 
 pplx::task<void> Exchange::GetPrice(std::string p_ticker, double* p_price)
 {	
+	//string functionId = "Price";
+	//web::http::http_request request = _GetUnAuthenticatedRequest(functionId, p_ticker);
+
 	//  If you hit this, you probably forgot to finish implementing a new Exchange.
 	assert(m_uriBase != "");
 
@@ -89,14 +66,6 @@ pplx::task<void> Exchange::GetPrice(std::string p_ticker, double* p_price)
 
 	//Create web request with specific exchange parameters
 	request.set_request_uri(_GetRequestWithParameters_GetPrice(p_ticker));
-
-	//Add necessary headers
-	map<string, string> requestHeaders;
-	_GetAdditionalHeaders_GetPrice(requestHeaders);
-	for (auto header : requestHeaders)
-	{
-		request.headers().add(StrUtil::s2ws(header.first), StrUtil::s2ws(header.second));
-	}
 
 	web::http::client::http_client client(baseUri);
 	return client.request(request)
@@ -136,17 +105,52 @@ std::string Exchange::_GenerateRequestUri(std::string p_uriBase, std::vector<std
 	return StrUtil::ws2s(fullRequestUri.to_string());
 }
 
+
+web::http::client::http_client Exchange::_GetHttpClient()
+{
+	//  If you hit this, you probably forgot to finish implementing a new Exchange.
+	assert(m_uriBase != "");
+	web::uri baseUri = web::uri(StrUtil::s2ws(m_uriBase));
+	web::http::client::http_client client(baseUri);
+	return client;
+}
+
+web::http::http_request Exchange::_GetAuthenticatedRequest(std::string p_publicKey, std::string p_privateKey, std::string p_functionId)
+{
+	//Create base request
+	web::http::http_request request(web::http::methods::GET);
+
+	//Create web request with specific exchange parameters
+	request.set_request_uri(_GetAuthenticatedRequestWithParameters(p_functionId, p_publicKey));
+
+	//Add necessary headers
+	map<string, string> requestHeaders;
+	_GetAuthenticatedHeaders(p_functionId, p_publicKey, p_privateKey, requestHeaders);
+	for (auto header : requestHeaders)
+		request.headers().add(StrUtil::s2ws(header.first), StrUtil::s2ws(header.second));
+
+	return request;
+}
+
+web::http::http_request Exchange::_GetUnauthenticatedRequest(std::string p_functionId)
+{
+	//Create base request
+	web::http::http_request request(web::http::methods::GET);
+
+	//Create web request with specific exchange parameters
+	request.set_request_uri(_GetUnauthenticatedRequestWithParameters(p_functionId));
+
+	return request;
+}
+
+
+
 void Exchange::_InitURIs()
 {
 	assert(false); // Child class must override this function
 }
 
-void Exchange::_ParseOpenTransactions(pplx::task<web::json::value> p_previousTask, std::shared_ptr<std::vector<Transaction>> p_transactions)
-{
-	assert(false); // Child class must override this function
-}
-
-void Exchange::_ParseTransactionHistory(pplx::task<web::json::value> p_previousTask, std::shared_ptr<std::vector<Transaction>> p_transactions)
+void Exchange::_ParseTransactions(pplx::task<web::json::value> p_previousTask, std::string p_functionId, std::shared_ptr<std::vector<Transaction>> p_transactions)
 {
 	assert(false); // Child class must override this function
 }
@@ -156,46 +160,27 @@ void Exchange::_ParsePrice(pplx::task<web::json::value> p_previousTask, double* 
 	assert(false); // Child class must override this function
 }
 
-utility::string_t Exchange::_GetRequestWithParameters(std::string p_functionId, std::string p_publicKey)
+utility::string_t Exchange::_GetRequestWithParameters_GetPrice(std::string p_ticker)
 {
 	assert(false); // Child class must override this function
 	return utility::string_t();
 }
 
-utility::string_t Exchange::_GetRequestWithParameters_TransactionHistory(std::string p_publicKey)
+utility::string_t Exchange::_GetAuthenticatedRequestWithParameters(std::string p_functionId, std::string p_publicKey)
+{
+	assert(false); // Child class must override this function
+	return utility::string_t();
+}
+
+void Exchange::_GetAuthenticatedHeaders(std::string p_functionId, std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
+{
+	assert(false); // Child class must override this function
+}
+
+utility::string_t Exchange::_GetUnauthenticatedRequestWithParameters(std::string p_functionId)
 {
 	assert(false); // Child class must override this function
 	return utility::string_t(); // Silence the compiler
-}
-
-utility::string_t Exchange::_GetRequestWithParameters_GetPrice(std::string p_ticker)
-{
-	assert(false); // Child class must override this function
-	return utility::string_t(); // Silence the compiler
-}
-
-void Exchange::_GetAdditionalHeaders(std::string p_functionId, std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
-{
-	assert(false); // Child class must override this function
-}
-
-void Exchange::_GetAdditionalHeaders_TransactionHistory(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
-{
-	assert(false); // Child class must override this function
-}
-
-void Exchange::_GetAdditionalHeaders_GetPrice(std::map<std::string, std::string>& p_additionalHeaders)
-{
-	assert(false); // Child class must override this function
-}
-
-web::http::client::http_client Exchange::_GetHttpClient()
-{
-	//  If you hit this, you probably forgot to finish implementing a new Exchange.
-	assert(m_uriBase != "");
-	web::uri baseUri = web::uri(StrUtil::s2ws(m_uriBase));
-	web::http::client::http_client client(baseUri);
-	return client;
 }
 
 
@@ -214,88 +199,6 @@ void Bittrex::_InitURIs()
 	m_uriGetCoinInfo = "public/getmarketsummary";
 }
 
-void Bittrex::_ParseOpenTransactions(pplx::task<web::json::value> p_previousTask, std::shared_ptr<std::vector<Transaction>> p_transactions)
-{
-	const web::json::value& jsonResponse = p_previousTask.get();
-	if (_ResponseIndicatesFailure(jsonResponse)) return;
-
-	auto jarray = jsonResponse.at(U("result")).as_array();
-	for (int i = 0; i < jarray.size(); ++i)
-	{
-		try {
-			auto orderDetails = jarray[i];
-			string orderUuid =			_GetTransactionID(orderDetails);					//eg asodnsad1029e
-			string fromAsset =			_GetFromAsset(orderDetails);						//eg BTC
-			string toAsset =			_GetToAsset(orderDetails);							//eg ETH
-			string orderType =			_GetTransactionType(orderDetails);					//eg LIMIT_BUY / LIMIT_SELL
-			double quantity =			_GetQuantity(orderDetails);							//eg 16.08
-			double quantityRemaining =	_GetQuantityRemaining(orderDetails);				//eg 13.00
-			double limitValue =			_GetLimitValue(orderDetails);						//eg 124.46
-			string dateTimeOpened =		_GetTimeOpened(orderDetails);						//eg 2017-11-18T13:09:10.533
-			bool isConditional =		_GetIsConditional(orderDetails);					//eg false
-			string condition =			_GetCondition(isConditional, orderDetails);			//eg NONE
-			double conditionTarget =	_GetConditionTarget(isConditional, orderDetails);	//334.00
-			
-			ETransactionType e_orderType =	(orderType == "LIMIT_BUY") ? ELimitBuy :
-											(orderType == "LIMIT_SELL") ? ELimitSell
-											: EUnsupportedType;
-
-			//std::cout << dateTimeOpened << ":   " << orderType << " " << quantity << " " << toAsset 
-					  //<< " in market " << fromAsset << "-" << toAsset << " for " << limitValue << " each." << "\n\n";
-
-			p_transactions->push_back(Transaction(orderUuid, fromAsset, toAsset, e_orderType, quantity, limitValue, dateTimeOpened));
-
-		}
-		catch (const web::json::json_exception e)
-		{
-			cout << "JSON Parsing failure." << endl;
-		}
-	}
-}
-
-void Bittrex::_ParseTransactionHistory(pplx::task<web::json::value> p_previousTask, std::shared_ptr<std::vector<Transaction>> p_transactions)
-{
-	const web::json::value& jsonResponse = p_previousTask.get();
-	if (_ResponseIndicatesFailure(jsonResponse)) return;
-
-	auto jarray = jsonResponse.at(U("result")).as_array();
-	for (int i = 0; i < jarray.size(); ++i)
-	{
-		try {
-			auto orderDetails = jarray[i];
-			string dateTimeClosed = _GetCloseDate(orderDetails);
-			double commission = _GetCommission(orderDetails);
-			bool isConditional = _GetIsConditional(orderDetails);
-			string condition = _GetCondition(isConditional, orderDetails);
-			double conditionTarget = _GetConditionTarget(isConditional, orderDetails);
-			string fromAsset = _GetFromAsset(orderDetails);
-			string toAsset = _GetToAsset(orderDetails);
-			double limitValue = _GetLimitValue(orderDetails);
-			string orderType = _GetTransactionType(orderDetails);
-			string orderUuid = _GetTransactionID(orderDetails);
-			double totalPrice = _GetTotalPrice(orderDetails);
-			double quantity = _GetQuantity(orderDetails);
-			double quantityRemaining = _GetQuantityRemaining(orderDetails);
-			string dateTimeOpened = _GetTimestamp(orderDetails);
-
-			ETransactionType e_orderType =	(orderType == "LIMIT_BUY") ? ELimitBuy :
-											(orderType == "LIMIT_SELL") ? ELimitSell
-											: EUnsupportedType;
-
-			//std::cout << dateTimeClosed << ":   " << orderType << " closed for " << quantity << " " << toAsset 
-					  //<< " in market " << fromAsset << "-" << toAsset << " for " << limitValue << " each." << "\n\n";
-
-			Transaction t(orderUuid, fromAsset, toAsset, e_orderType, quantity, limitValue, dateTimeOpened);
-			t.Close(dateTimeClosed);
-			p_transactions->push_back(t);
-		}
-		catch (const web::json::json_exception e)
-		{
-			cout << "JSON Parsing failure." << endl;
-		}
-	}
-}
-
 void Bittrex::_ParsePrice(pplx::task<web::json::value> p_previousTask, double* p_price)
 {
 	const web::json::value& jsonResponse = p_previousTask.get();
@@ -312,7 +215,60 @@ void Bittrex::_ParsePrice(pplx::task<web::json::value> p_previousTask, double* p
 	}
 }
 
-utility::string_t Bittrex::_GetRequestWithParameters(std::string p_functionId, std::string p_publicKey)
+void Bittrex::_ParseTransactions(pplx::task<web::json::value> p_previousTask, std::string p_functionId, std::shared_ptr<std::vector<Transaction>> p_transactions)
+{
+	const web::json::value& jsonResponse = p_previousTask.get();
+	if (_ResponseIndicatesFailure(jsonResponse)) return;
+	auto jarray = jsonResponse.at(U("result")).as_array();
+
+	for (int i = 0; i < jarray.size(); ++i)
+	{
+		try {
+			auto orderDetails		= jarray[i];
+			bool isConditional		= _GetIsConditional(orderDetails);					//eg false
+			string condition		= _GetCondition(isConditional, orderDetails);
+			double conditionTarget	= _GetConditionTarget(isConditional, orderDetails);	//334.00
+			string fromAsset		= _GetFromAsset(orderDetails);
+			string toAsset			= _GetToAsset(orderDetails);
+			double limitValue		= _GetLimitValue(orderDetails);
+			
+			double quantity			= _GetQuantity(orderDetails);						//eg 16.08
+			double quantityRemaining= _GetQuantityRemaining(orderDetails);
+			string orderUuid		= _GetTransactionID(orderDetails);					//eg asodnsad1029e
+
+			string orderType		= _GetTransactionType(orderDetails);				//eg LIMIT_BUY / LIMIT_SELL
+			ETransactionType e_orderType = (orderType == "LIMIT_BUY") ? ELimitBuy
+										 : (orderType == "LIMIT_SELL") ? ELimitSell
+										 : EUnsupportedType;
+
+			if (p_functionId == "OpenOrders")
+			{	
+				 string dateTimeOpened = _GetTimeOpened(orderDetails);						//eg 2017-11-18T13:09:10.533
+				 Transaction t(orderUuid, fromAsset, toAsset, e_orderType, quantity, limitValue, dateTimeOpened);
+				 p_transactions->push_back(t);
+			}
+			else if (p_functionId == "TransactionHistory")
+			{
+				string dateTimeOpened = _GetTimestamp(orderDetails);
+				string dateTimeClosed = _GetCloseDate(orderDetails);
+				
+				double commission	  = _GetCommission(orderDetails); //Currently not used
+				double totalPrice	  = _GetTotalPrice(orderDetails); //Currently not used
+				
+				Transaction t(orderUuid, fromAsset, toAsset, e_orderType, quantity, limitValue, dateTimeOpened);
+				t.Close(dateTimeClosed);
+
+				p_transactions->push_back(t);
+			}
+		}
+		catch (const web::json::json_exception e)
+		{
+			cout << "JSON Parsing failure." << endl;
+		}
+	}
+}
+
+utility::string_t Bittrex::_GetAuthenticatedRequestWithParameters(std::string p_functionId, std::string p_publicKey)
 {
 	std::string uriBase = "";
 	std::vector<std::pair<std::string, std::string>> parameters;
@@ -323,34 +279,26 @@ utility::string_t Bittrex::_GetRequestWithParameters(std::string p_functionId, s
 		parameters.push_back(std::make_pair("apikey", p_publicKey));
 		parameters.push_back(std::make_pair("nonce", _GetNonce()));
 	}
+	else if (p_functionId == "TransactionHistory")
+	{
+		uriBase = m_uriTransactionHistory;
+		parameters.push_back(std::make_pair("apikey", p_publicKey));
+		parameters.push_back(std::make_pair("nonce", _GetNonce()));
+	}
 	
 	return StrUtil::s2ws(_GenerateRequestUri(uriBase, parameters));
 }
 
-utility::string_t Bittrex::_GetRequestWithParameters_TransactionHistory(std::string p_publicKey)
-{
-	web::uri requestUri = web::uri(StrUtil::s2ws(m_uriTransactionHistory));
-	web::uri_builder fullRequestUri(requestUri);
-	fullRequestUri.append_query(U("apikey"), StrUtil::s2ws(p_publicKey));
-	std::stringstream ssNonce; ssNonce.str(""); ssNonce << std::time(nullptr);
-	fullRequestUri.append_query(U("nonce"), ssNonce.str().c_str());
-
-	auto temp = fullRequestUri.to_string();
-	return temp;
-}
 
 utility::string_t Bittrex::_GetRequestWithParameters_GetPrice(std::string p_ticker)
 {
-	//https://bittrex.com/api/v1.1/public/getmarketsummary?market=btc-ltc    
-	web::uri requestUri = web::uri(StrUtil::s2ws(m_uriGetCoinInfo));
-	web::uri_builder fullRequestUri(requestUri);
-	fullRequestUri.append_query(U("market"), U("btc-") + StrUtil::s2ws(p_ticker));
-
-	auto temp = fullRequestUri.to_string();
-	return temp;
+	string uriBase = m_uriGetCoinInfo;
+	std::vector<std::pair<std::string, std::string>> parameters;
+	parameters.push_back(std::make_pair("market", "btc-" + p_ticker));
+	return StrUtil::s2ws(_GenerateRequestUri(uriBase, parameters));
 }
 
-void Bittrex::_GetAdditionalHeaders(std::string p_functionId, std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
+void Bittrex::_GetAuthenticatedHeaders(std::string p_functionId, std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
 {
 	p_additionalHeaders.clear();
 	string uri = "";
@@ -359,34 +307,37 @@ void Bittrex::_GetAdditionalHeaders(std::string p_functionId, std::string p_publ
 	{	
 		uri = m_uriOpenTransactions;
 	}
+	else if (p_functionId == "TransactionHistory")
+	{
+		uri = m_uriTransactionHistory;
+	}
+	
 
 	//Todo refactoring - Move the below to base class
 	web::uri requestUri = web::uri(StrUtil::s2ws(uri));
 	web::uri_builder fullRequestUri(requestUri);
-	auto requestWithParameters = _GetRequestWithParameters(p_functionId, p_publicKey);
+	auto requestWithParameters = _GetAuthenticatedRequestWithParameters(p_functionId, p_publicKey);
 	std::string completeUri = StrUtil::ws2s(StrUtil::s2ws(m_uriBase).append(requestWithParameters));
 	
 	//But not this
 	p_additionalHeaders["apisign"] = HashUtil::sha512(p_privateKey, completeUri);	
 }
 
-void Bittrex::_GetAdditionalHeaders_TransactionHistory(std::string p_publicKey, std::string p_privateKey, std::map<std::string, std::string>& p_additionalHeaders)
+utility::string_t Bittrex::_GetUnauthenticatedRequestWithParameters(std::string p_functionId)
 {
-	p_additionalHeaders.clear();
-	web::uri requestUri = web::uri(StrUtil::s2ws(m_uriTransactionHistory));
-	web::uri_builder fullRequestUri(requestUri);
+	std::string uriBase = "";
+	std::vector<std::pair<std::string, std::string>> parameters;
+
+	if (p_functionId == "Price")
+	{
+		uriBase = m_uriGetCoinInfo;
+		//parameters.push_back(std::make_pair("market", "btc-" + p_ticker));
+		// In fact, this function should probably take  vector<string> as arguments, 
+		//and then based on the func ID I can interpret the parameters in the vector of strings.
+	}
 	
-	fullRequestUri.append_query(U("apikey"), StrUtil::s2ws(p_publicKey));
-	std::stringstream ssNonce; ssNonce.str(""); ssNonce << std::time(nullptr);
-	fullRequestUri.append_query(U("nonce"), ssNonce.str().c_str());
-	std::string completeUri = StrUtil::ws2s(StrUtil::s2ws(m_uriBase).append(fullRequestUri.to_string()));
 
-	p_additionalHeaders["apisign"] = HashUtil::sha512(p_privateKey, completeUri);
-}
-
-void Bittrex::_GetAdditionalHeaders_GetPrice(std::map<std::string, std::string>& p_additionalHeaders)
-{
-	p_additionalHeaders.clear();
+	return StrUtil::s2ws(_GenerateRequestUri(uriBase, parameters));
 }
 
 bool Bittrex::_ResponseIndicatesFailure(const web::json::value& p_jsonValue)
@@ -457,6 +408,11 @@ string Bittrex::_GetTimeOpened(web::json::value & p_jvalue)
 	return StrUtil::ws2s(p_jvalue.at(U("Opened")).as_string());
 }
 
+std::string Bittrex::_GetTimestamp(web::json::value & p_jvalue)
+{
+	return StrUtil::ws2s(p_jvalue.at(U("TimeStamp")).as_string());
+}
+
 bool Bittrex::_GetIsConditional(web::json::value & p_jvalue)
 {
 	return p_jvalue.at(U("IsConditional")).as_bool();
@@ -496,9 +452,4 @@ double Bittrex::_GetCommission(web::json::value & p_jvalue)
 double Bittrex::_GetTotalPrice(web::json::value & p_jvalue)
 {
 	return p_jvalue.at(U("Price")).as_double();
-}
-
-std::string Bittrex::_GetTimestamp(web::json::value & p_jvalue)
-{
-	return StrUtil::ws2s(p_jvalue.at(U("TimeStamp")).as_string());
 }
