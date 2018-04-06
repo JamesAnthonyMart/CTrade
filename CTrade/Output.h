@@ -13,7 +13,23 @@ enum OutputType
 class Output 
 {
 public:
-	static void Print(std::string p_message)
+	static void Info(std::string p_message)
+	{
+		_Print(p_message + "\n");
+	}
+
+	static void Warning(std::string p_message)
+	{
+		Info("Warning: " + p_message);
+	}
+
+	static void Error(std::string p_message)
+	{
+		Info("Error: " + p_message);
+	}
+
+private:
+	static void _Print(std::string p_message)
 	{
 		if (m_mode == Console)
 		{
@@ -23,14 +39,6 @@ public:
 		{
 			assert(false); //not supported yet
 		}
-	}
-	static void PrintLn(std::string p_message)
-	{
-		Print(p_message + "\n");
-	}
-	static void PrintLnErr(std::string p_message)
-	{
-		PrintLn("Error: " + p_message);
 	}
 
 	const static OutputType m_mode = Console;

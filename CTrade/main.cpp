@@ -5,9 +5,12 @@ so they can use dan's techniques to trade the crypto market.
 CoinMarketCap integration if needed
 string url = "http://api.coinmarketcap.com/v1/ticker/?limit=10";
 
+UPDATE NOTES:
+* I think I finished updating the client's file with transactions from their transaction history
+* I think I can now gather the transaction history also from the file, so all the transactions should persist now.
+* Need to test the above ^ Maybe write a unit test?
 
 TODO:
-* Finish updating the client's file with transactions from their transaction history
 * Integrate Qt to give an actual UI to this program.
 * Alert the client by their preferred alert method whenever a new transaction is logged 
     in the transaction history.
@@ -19,33 +22,30 @@ TODO:
 #include <map>		
 #include <functional>
 #include <boost/algorithm/string.hpp>
+#include <algorithm>
 
 #include "Portfolio.h"
 #include "ClientManager.h"
 #include "Output.h"
 
-/*Temporary includes for file read*/
-#include <sstream>
-#include <fstream>
 
 
 using std::string;
 
 void HandleCommands();
-void _TemporaryGetClientDataFromFile(std::vector<std::string> &clientdata);
 
 int main()
 {	
-	FileManager fm;
-	fm.ConfigureClientDataFile("C:\\Users\\James\\Google Drive\\Desktop\\clientdata.xml");
+	FileManager::Get().ConfigureDataDirectoryPath("C:\\Users\\James\\Google Drive\\Desktop\\CTrade\\");
+	FileManager::Get().ConfigureClientDataFile("clientdata.xml");
 	
-	std::shared_ptr<Client> c1 = std::make_shared<Client>();
-	bool clientExists = fm.LoadClientData(c1, "James");
-	if (clientExists)
+	std::vector<std::shared_ptr<Client>> clients;
+	FileManager::Get().LoadClientData(clients);
+	
+	std::for_each(clients.begin(), clients.end(), [=](std::shared_ptr<Client> p_client) 
 	{
-		//Give the manager this client
-		ClientManager::Get().AddClient(c1);
-	}
+		ClientManager::Get().RegisterClient(p_client);
+	});
 
 	//Handle console commands for client input
 	HandleCommands();
@@ -56,9 +56,21 @@ void HandleCommands()
 	std::map<std::string, std::function<void()>> commands;
 	bool bContinuePrompting = true;
 
-	std::function<void()> fcPause = std::bind([]() {Output::PrintLn("[PAUSED]"); ClientManager::Get().userPause = true; });
-	std::function<void()> fcResume = std::bind([]() {Output::PrintLn("[RESUMING...]\n"); ClientManager::Get().userPause = false; });
-	std::function<void()> fcExit = std::bind([&bContinuePrompting, fcResume]() {if (ClientManager::Get().userPause == true) fcResume(); Output::PrintLn("[STOPPING...]"); bContinuePrompting = false; });
+	std::function<void()> fcPause = std::bind([]() {
+		Output::Info("[PAUSED]"); 
+		ClientManager::Get().userPause = true; 
+	});
+
+	std::function<void()> fcResume = std::bind([]() {
+		Output::Info("[RESUMING...]\n"); 
+		ClientManager::Get().userPause = false; 
+	});
+
+	std::function<void()> fcExit = std::bind([&bContinuePrompting, fcResume]() {
+		if (ClientManager::Get().userPause == true) fcResume(); 
+		Output::Info("[STOPPING...]"); 
+		bContinuePrompting = false; 
+	});
 	
 	commands["STOP"] = fcExit;
 	commands["EXIT"] = fcExit;

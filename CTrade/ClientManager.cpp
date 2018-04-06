@@ -31,12 +31,12 @@ ClientManager::~ClientManager()
 	managementThread.join();
 }
 
-bool ClientManager::AddClient(shared_ptr<Client> p_client)
+bool ClientManager::RegisterClient(shared_ptr<Client> p_client)
 {
 	bool clientAlreadyExists = false;
 	for (std::shared_ptr<Client> client : m_clients)
 	{
-		if (client->GetName() == p_client->GetName())
+		if (*client == *p_client)
 		{
 			clientAlreadyExists = true;
 			break;
@@ -55,7 +55,8 @@ void ClientManager::_Manage()
 {
 	while (!ClientManager::userQuit)
 	{
-		std::for_each(m_clients.begin(), m_clients.end(), [this](shared_ptr<Client> c) {
+		std::for_each(m_clients.begin(), m_clients.end(), [this](shared_ptr<Client> c) 
+		{
 			//todo: try { } catch (Exception NoApiKeysConfigured) { ... }
 			_PollCompleteOrders(c);
 			_PollOpenOrders(c);
@@ -84,15 +85,18 @@ void ClientManager::_PollCompleteOrders(const shared_ptr<Client> p_client)
 		vector<Transaction> transactionHistory;
 		ExchangeManager::Get().GetTransactionHistory(exchange, p_client->GetPublicKey(exchange), p_client->GetPrivateKey(exchange), transactionHistory);
 
-		// If there exists a transaction history
+		_PruneForNewTransactions(p_client->GetID(), transactionHistory);
+
+		// If there are any new transactions to record
 		if (transactionHistory.size() > 0)
 		{
 			// Temporary workaround to adhere to the filemanager API
 			vector<std::shared_ptr<Transaction>> transactionHistoryPtrs;
 			for (size_t i = 0; i < transactionHistory.size(); ++i)
 				transactionHistoryPtrs.push_back(std::make_shared<Transaction>(transactionHistory[i]));
+
 			// Write it to the client's file
-			fm.RecordTransactionsInFile(p_client->GetName().append(".xml"), transactionHistoryPtrs);
+			FileManager::Get().RecordTransactionsInFile(p_client->GetID(), transactionHistoryPtrs);
 
 			std::cout << "   " << exchange << ": " << transactionHistory.size() << " closed transactions." << std::endl;
 		}
@@ -121,7 +125,7 @@ void ClientManager::_CheckArbitrageOpportunities(const std::shared_ptr<Client> p
 	std::cout << "Find and execute arbitrages on ETH and LTC through Bittrex and GDAX. (Incomplete)" << endl;
 
 	// Check that an arbitrator doesn't already exist for this client
-	if (ArbitratorManager::Get().HasClient(p_client->GetName()))
+	if (ArbitratorManager::Get().HasClient(p_client->GetID()))
 		return;
 
 	// Check that the client has both Bittrex and GDAX
@@ -158,4 +162,10 @@ void ClientManager::_CheckArbitrageOpportunities(const std::shared_ptr<Client> p
 		// * Keeps track of its own state (Running, Closing)
 		// * Keeps track of its substate (Buying, SendA, Selling, SendB)	
 	}
+}
+
+void ClientManager::_PruneForNewTransactions(std::string p_clientName, std::vector<Transaction>& p_transactions)
+{
+	std::vector<Transaction> recordedTransactions;
+	FileManager::Get().GetRecordedTransactions(p_clientName, recordedTransactions);
 }

@@ -38,9 +38,12 @@ public:
 
 class Client {
 public:
-	Client() : m_clientName(""), m_phoneNumber("") {}
-	Client(std::string p_clientName) : m_clientName(p_clientName) {}
+	Client() : m_clientID(""), m_clientName(""), m_phoneNumber("") {}
+	Client(std::string p_clientID) : m_clientID(p_clientID), m_clientName(""), m_phoneNumber("") {}
 	
+	void SetID(std::string p_ID) { m_clientID = p_ID; }
+	std::string GetID() { return m_clientID; }
+
 	void SetName(std::string p_name) { m_clientName = p_name; }
 	std::string GetName() { return m_clientName; }
 
@@ -61,7 +64,13 @@ public:
 	ManagementStrategy m_ManagementStrategy;
 	ArbitrageConfiguration m_ArbitrageConfiguration;
 
+	bool Client::operator==(const Client &other) const 
+	{
+		return m_clientID == other.m_clientID;
+	}
+
 private:
+	std::string m_clientID;
 	std::string m_clientName;
 	std::string m_phoneNumber;
 

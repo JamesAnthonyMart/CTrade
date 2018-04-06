@@ -228,8 +228,8 @@ void Bittrex::_ParseTransactions(pplx::task<web::json::value> p_previousTask, st
 			bool isConditional		= _GetIsConditional(orderDetails);					//eg false
 			string condition		= _GetCondition(isConditional, orderDetails);
 			double conditionTarget	= _GetConditionTarget(isConditional, orderDetails);	//334.00
-			string fromAsset		= _GetFromAsset(orderDetails);
-			string toAsset			= _GetToAsset(orderDetails);
+			string marketPairA		= _GetMarketPairA(orderDetails);					//Gets the ticker of the asset gained when asking in this market    eg Eth
+			string marketPairB		= _GetMarketPairB(orderDetails);					//Gets the ticker of the asset gained when bidding in this market   eg BAT
 			double limitValue		= _GetLimitValue(orderDetails);
 			
 			double quantity			= _GetQuantity(orderDetails);						//eg 16.08
@@ -240,11 +240,14 @@ void Bittrex::_ParseTransactions(pplx::task<web::json::value> p_previousTask, st
 			ETransactionType e_orderType = (orderType == "LIMIT_BUY") ? ELimitBuy
 										 : (orderType == "LIMIT_SELL") ? ELimitSell
 										 : EUnsupportedType;
+			assert(e_orderType != EUnsupportedType);	//Todo - Should be replaced with a message and return statement
+			std::string fromAsset = (e_orderType == ELimitBuy) ? marketPairA : marketPairB;
+			std::string toAsset = (e_orderType == ELimitBuy) ? marketPairB : marketPairA;
 
 			if (p_functionId == "OpenOrders")
 			{	
-				 string dateTimeOpened = _GetTimeOpened(orderDetails);						//eg 2017-11-18T13:09:10.533
-				 Transaction t(orderUuid, fromAsset, toAsset, e_orderType, quantity, limitValue, dateTimeOpened);
+				 string dateTimeOpened = _GetTimeOpened(orderDetails);						                     //eg 2017-11-18T13:09:10.533
+				 Transaction t(orderUuid, m_exchangeName, e_orderType, fromAsset, toAsset, limitValue, 0.0, quantity, dateTimeOpened);
 				 p_transactions->push_back(t);
 			}
 			else if (p_functionId == "TransactionHistory")
@@ -255,7 +258,7 @@ void Bittrex::_ParseTransactions(pplx::task<web::json::value> p_previousTask, st
 				double commission	  = _GetCommission(orderDetails); //Currently not used
 				double totalPrice	  = _GetTotalPrice(orderDetails); //Currently not used
 				
-				Transaction t(orderUuid, fromAsset, toAsset, e_orderType, quantity, limitValue, dateTimeOpened);
+				Transaction t(orderUuid, m_exchangeName, e_orderType, fromAsset, toAsset, limitValue, 0.0, quantity, dateTimeOpened);
 				t.Close(dateTimeClosed);
 
 				p_transactions->push_back(t);
@@ -361,7 +364,7 @@ string Bittrex::_GetTransactionID(web::json::value & p_jvalue)
 	return StrUtil::ws2s(p_jvalue.at(U("OrderUuid")).as_string());
 }
 
-string Bittrex::_GetFromAsset(web::json::value & p_jvalue)
+string Bittrex::_GetMarketPairA(web::json::value & p_jvalue)
 {
 	auto exchange = p_jvalue.at(U("Exchange")).as_string();
 	std::wstring fromAsset = U("Ticker_unable_to_be_parsed");
@@ -372,7 +375,7 @@ string Bittrex::_GetFromAsset(web::json::value & p_jvalue)
 	return StrUtil::ws2s(fromAsset);
 }
 
-string Bittrex::_GetToAsset(web::json::value & p_jvalue)
+string Bittrex::_GetMarketPairB(web::json::value & p_jvalue)
 {
 	auto exchange = p_jvalue.at(U("Exchange")).as_string();
 	std::wstring toAsset = U("Ticker_unable_to_be_parsed");

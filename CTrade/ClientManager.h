@@ -21,7 +21,7 @@ public:
 	static bool userQuit;
 	static bool userPause;
 
-	bool AddClient(std::shared_ptr<Client> p_client);
+	bool RegisterClient(std::shared_ptr<Client> p_client);
 
 private:
 	ClientManager();
@@ -33,11 +33,11 @@ private:
 	void _ReconfigureFloatingLures(const std::shared_ptr<Client> p_client);
 	void _CheckArbitrageOpportunities(const std::shared_ptr<Client> p_client);
 
+	void _PruneForNewTransactions(std::string p_clientName, std::vector<Transaction>& p_transactions);
 
 	std::thread managementThread;
 
 	std::vector<std::shared_ptr<Client>> m_clients;
-	FileManager fm;
 
 public:
 	//Meyers' Singleton Implementation

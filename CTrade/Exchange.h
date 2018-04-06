@@ -97,8 +97,8 @@ private:
 
 	//JSON Handling
 	std::string _GetTransactionID(web::json::value& p_jvalue);
-	std::string _GetFromAsset(web::json::value& p_jvalue);
-	std::string _GetToAsset(web::json::value& p_jvalue);
+	std::string _GetMarketPairA(web::json::value& p_jvalue);
+	std::string _GetMarketPairB(web::json::value& p_jvalue);
 	std::string _GetTransactionType(web::json::value& p_jvalue);
 	double _GetQuantity(web::json::value& p_jvalue);
 	double _GetQuantityRemaining(web::json::value& p_jvalue);
