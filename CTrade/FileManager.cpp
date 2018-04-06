@@ -82,9 +82,10 @@ bool FileManager::LoadClientData(std::vector<std::shared_ptr<Client>>& p_clients
 	}
 
 	// Ensure specified client data file exists
-	std::shared_ptr<pugi::xml_document> doc;
+	std::shared_ptr<pugi::xml_document> doc = nullptr;
 	bool bDocumentLoaded = _GetClientInfoDoc(doc);
 	if (!bDocumentLoaded) return false;
+	if (doc == nullptr) return false;
 
 	p_clients.clear();
 	// Get client data from file
