@@ -83,5 +83,5 @@ std::string Client::GetPassphrase(string p_exchangeName)
 
 bool Client::HasExchange(std::string p_exchangeName)
 {
-	return GetPublicKey(p_exchangeName) != "";
+	return (GetPublicKey(p_exchangeName) != "") && (GetPrivateKey(p_exchangeName) != "");
 }

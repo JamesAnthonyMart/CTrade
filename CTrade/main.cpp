@@ -36,11 +36,11 @@ void HandleCommands();
 
 int main()
 {	
-	FileManager::Get().ConfigureDataDirectoryPath("C:\\Users\\James\\Google Drive\\Desktop\\CTrade\\");
-	FileManager::Get().ConfigureClientDataFile("clientdata.xml");
+	DatabaseManager::Get().ConfigureDataDirectoryPath("C:\\Users\\James\\Google Drive\\Desktop\\CTrade\\");
+	DatabaseManager::Get().ConfigureClientDataFile("clientdata.xml");
 	
 	std::vector<std::shared_ptr<Client>> clients;
-	FileManager::Get().LoadClientData(clients);
+	DatabaseManager::Get().LoadClientData(clients);
 	
 	std::for_each(clients.begin(), clients.end(), [=](std::shared_ptr<Client> p_client) 
 	{

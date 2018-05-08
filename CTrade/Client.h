@@ -5,17 +5,19 @@
 #include <map>
 
 #include "Portfolio.h"
-#include "FileManager.h"
+#include "DatabaseManager.h"
 
 class ClientManager;
 
 struct ManagementStrategy
 {
-	ManagementStrategy() : NotifyOnTradeCompletion(false), EnableArbitrage(false) {	}
+	ManagementStrategy() : NotifyOnTradeCompletion(false), EnableArbitrage(false), EnableOrderTracking(false), EnableFloatingLures(false) {	}
 
 	//Configurations
 	bool NotifyOnTradeCompletion;
 	bool EnableArbitrage;
+	bool EnableOrderTracking;
+	bool EnableFloatingLures;
 };
 
 struct ArbitrageConfiguration

@@ -24,17 +24,17 @@ class Client;
 #define GetCurrentDir getcwd
 #endif
 
-class FileManager {
+class DatabaseManager {
 public:
 	//Singleton
-	static FileManager& Get()
+	static DatabaseManager& Get()
 	{
-		static FileManager f;
+		static DatabaseManager f;
 		return f;
 	}
 
 	//Mutate information
-	bool RecordTransactionsInFile(std::string p_clientName, const std::vector<std::shared_ptr<Transaction>>& p_transactions);
+	bool RecordTransactions(std::string p_clientName, const std::vector<std::shared_ptr<Transaction>>& p_transactions);
 	
 	//Access information
 	bool LoadClientData(std::vector<std::shared_ptr<Client>>& p_clients); //Returns true if the clients were successfully loaded
@@ -45,11 +45,11 @@ public:
 	bool GetRecordedTransactions(std::string p_client, std::vector<Transaction>& p_Transactions);
 
 private:
-	FileManager();
+	DatabaseManager();
 	static std::string _GetCurrentWorkingDir();
 	static std::string _ClientFileName(std::string p_clientName) { return "trans_" + p_clientName + ".xml"; }
 	
-	bool _GetClientInfoDoc(std::shared_ptr<pugi::xml_document> p_doc);
+	bool _GetClientInfoDoc(std::shared_ptr<pugi::xml_document>& p_doc);
 	bool _GetClientTransactionDoc(std::string p_fullFilePath, std::shared_ptr<pugi::xml_document> p_doc);
 	
 	Transaction _CreateTransaction(const pugi::xml_node& p_transactionNode);

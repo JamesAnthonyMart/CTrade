@@ -123,7 +123,7 @@
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="Exchange.cpp" />
     <ClCompile Include="ExchangeManager.cpp" />
-    <ClCompile Include="FileManager.cpp" />
+    <ClCompile Include="DatabaseManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ClientManager.cpp" />
     <ClCompile Include="Portfolio.cpp" />
@@ -137,7 +137,7 @@
     <ClInclude Include="Exchange.h" />
     <ClInclude Include="ExchangeManager.h" />
     <ClInclude Include="ClientManager.h" />
-    <ClInclude Include="FileManager.h" />
+    <ClInclude Include="DatabaseManager.h" />
     <ClInclude Include="HashUtil.h" />
     <ClInclude Include="Output.h" />
     <ClInclude Include="Portfolio.h" />

@@ -5,8 +5,9 @@
 
 #include "ClientManager.h"
 #include "ExchangeManager.h"
-#include "FileManager.h"
+#include "DatabaseManager.h"
 #include "ArbitratorManager.h"
+#include "Output.h"
 
 
 using std::cout;
@@ -57,11 +58,29 @@ void ClientManager::_Manage()
 	{
 		std::for_each(m_clients.begin(), m_clients.end(), [this](shared_ptr<Client> c) 
 		{
+			int enabledFeatures = 0;
 			//todo: try { } catch (Exception NoApiKeysConfigured) { ... }
-			_PollCompleteOrders(c);
-			_PollOpenOrders(c);
-			_ReconfigureFloatingLures(c);
-			_CheckArbitrageOpportunities(c);
+			if (c->m_ManagementStrategy.EnableOrderTracking)
+			{
+				enabledFeatures++;
+				_PollCompleteOrders(c);
+				_PollOpenOrders(c);
+			}
+			if (c->m_ManagementStrategy.EnableFloatingLures)
+			{
+				enabledFeatures++;
+				_ReconfigureFloatingLures(c);
+			}
+			if (c->m_ManagementStrategy.EnableArbitrage)
+			{
+				enabledFeatures++;
+				_CheckArbitrageOpportunities(c);
+			}
+
+			if (enabledFeatures == 0)
+			{
+				Output::Info("Client with ID: " + c->GetID() + ": No services enabled!");
+			}
 		});
 		Sleep(5000);
 
@@ -96,7 +115,7 @@ void ClientManager::_PollCompleteOrders(const shared_ptr<Client> p_client)
 				transactionHistoryPtrs.push_back(std::make_shared<Transaction>(transactionHistory[i]));
 
 			// Write it to the client's file
-			FileManager::Get().RecordTransactionsInFile(p_client->GetID(), transactionHistoryPtrs);
+			DatabaseManager::Get().RecordTransactions(p_client->GetID(), transactionHistoryPtrs);
 
 			std::cout << "   " << exchange << ": " << transactionHistory.size() << " closed transactions." << std::endl;
 		}
@@ -167,5 +186,5 @@ void ClientManager::_CheckArbitrageOpportunities(const std::shared_ptr<Client> p
 void ClientManager::_PruneForNewTransactions(std::string p_clientName, std::vector<Transaction>& p_transactions)
 {
 	std::vector<Transaction> recordedTransactions;
-	FileManager::Get().GetRecordedTransactions(p_clientName, recordedTransactions);
+	DatabaseManager::Get().GetRecordedTransactions(p_clientName, recordedTransactions);
 }
