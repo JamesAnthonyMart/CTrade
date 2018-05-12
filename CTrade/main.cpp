@@ -6,11 +6,16 @@ CoinMarketCap integration if needed
 string url = "http://api.coinmarketcap.com/v1/ticker/?limit=10";
 
 UPDATE NOTES:
-* I think I finished updating the client's file with transactions from their transaction history
+* I finished updating the client's file with transactions from their transaction history
 * I think I can now gather the transaction history also from the file, so all the transactions should persist now.
-* Need to test the above ^ Maybe write a unit test?
+	* Need to test the above ^ Maybe write a unit test?
 
 TODO:
+Short term:
+* Open orders can be tracked already, but I don't do anything with them. Maybe all I do is list 
+  them as "currently open orders" and list some stats about them?
+
+Longer term:
 * Integrate Qt to give an actual UI to this program.
 * Alert the client by their preferred alert method whenever a new transaction is logged 
     in the transaction history.
@@ -88,6 +93,10 @@ void HandleCommands()
 		if (commands.find(inputStr) != commands.end())
 		{
 			commands[inputStr]();
+		}
+		else
+		{
+			Output::Info("Unrecognized input.");
 		}
 	}
 }

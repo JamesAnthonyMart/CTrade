@@ -33,7 +33,7 @@ private:
 	void _ReconfigureFloatingLures(const std::shared_ptr<Client> p_client);
 	void _CheckArbitrageOpportunities(const std::shared_ptr<Client> p_client);
 
-	void _PruneForNewTransactions(std::string p_clientName, std::vector<Transaction>& p_transactions);
+	void _PruneForNewlyCompletedTransactions(std::string p_clientName, std::vector<Transaction>& p_transactions);
 
 	std::thread managementThread;
 

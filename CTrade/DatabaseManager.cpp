@@ -26,7 +26,7 @@ DatabaseManager::DatabaseManager() :   m_dataDirectoryPath("")
 	m_workingFilePath = DatabaseManager::_GetCurrentWorkingDir();
 }
 
-bool DatabaseManager::RecordTransactions(std::string p_clientName, const std::vector<std::shared_ptr<Transaction>>& p_transactions)
+bool DatabaseManager::RecordCompleteTransactions(std::string p_clientName, const std::vector<std::shared_ptr<Transaction>>& p_transactions)
 {	
 	std::shared_ptr<pugi::xml_document> doc = m_clientFiles[p_clientName];
 	
@@ -35,8 +35,8 @@ bool DatabaseManager::RecordTransactions(std::string p_clientName, const std::ve
 
 	if (doc == nullptr)
 	{
-		if (!_GetClientTransactionDoc(fullFileName, doc)) //Creates the document if not found
-			return false;	//Return false if creation failed
+		_GetClientTransactionDoc(fullFileName, doc); //Creates the document if not found
+		m_clientFiles[p_clientName] = doc;
 	}
 
 	pugi::xml_node TransactionHistory = doc->child("Client").child("TransactionHistory");
@@ -45,9 +45,8 @@ bool DatabaseManager::RecordTransactions(std::string p_clientName, const std::ve
 	{
 		auto t = p_transactions[i];
 
-		//  Todo: I think I should pass the pugi node into some public transaction function, which then attaches
-		//    its information into the pugi node. This function shouldn't really know how to create a transaction node, 
-		//    it should just facilitate the creation.
+		//  Todo: I think I should ask the Transaction object how it wants to be serialized, and then just follow its directions.
+		//        Doesn't make sense the database manager itself knows how to serialize a transaction.
 		pugi::xml_node newTransaction = TransactionHistory.append_child("Transaction");
 		newTransaction.append_attribute("transId").set_value(t->GetTransactionID().c_str());
 		newTransaction.append_attribute("exchange").set_value(t->GetExchange().c_str());
@@ -137,8 +136,13 @@ bool DatabaseManager::LoadClientData(std::vector<std::shared_ptr<Client>>& p_cli
 		////						ENABLE CONFIGURATIONS							////
 		////////////////////////////////////////////////////////////////////////////////
 		bool bValidClient = true;
-		//enableOrderTracking="false" enableAlertsOnTradeCompletion="false" enableFloatingLures="false" enableArbitrage="false"
-		if (Configuration.attribute("enableOrderTracking").as_string() == "true")
+		
+		std::function<bool(const pugi::char_t*)> IsAttributeTrue = [&](const pugi::char_t* p_attributeName) -> bool
+		{
+			return (static_cast<std::string>(Configuration.attribute(p_attributeName).as_string()) == "true");
+		};
+
+		if (IsAttributeTrue("enableOrderTracking"))
 		{
 			//  Requirements: Must have at least one exchange configured
 			//    At the moment, the one exchange must be Bittrex
@@ -153,21 +157,21 @@ bool DatabaseManager::LoadClientData(std::vector<std::shared_ptr<Client>>& p_cli
 			}
 		}
 
-		if (Configuration.attribute("enableAlertsOnTradeCompletion").as_string() == "true")
+		if (IsAttributeTrue("enableAlertsOnTradeCompletion"))
 		{
 			//Todo - Add requirements: Must have at least one exchange configured
 			Output::Warning("Alerts on trade completion not yet supported... try again later.");
 			client->m_ManagementStrategy.NotifyOnTradeCompletion = /*true;*/ false;
 		}
 
-		if (Configuration.attribute("enableFloatingLures").as_string() == "true")
+		if (IsAttributeTrue("enableFloatingLures"))
 		{
 			//Todo - Add requirements: Must have at least one exchange configured
 			Output::Warning("Floating lure management not yet supported... try again later.");
 			client->m_ManagementStrategy.EnableFloatingLures = /*true;*/ false;
 		}
 
-		if (Configuration.attribute("enableArbitrage").as_string() == "true")
+		if (IsAttributeTrue("enableArbitrage"))
 		{
 			//  Requirements: Must have two exchanges configured.
 			//    At the moment, the two exchanges MUST be Bittrex and GDAX
@@ -204,7 +208,7 @@ bool DatabaseManager::LoadClientData(std::vector<std::shared_ptr<Client>>& p_cli
 	return true;
 }
 
-bool DatabaseManager::GetRecordedTransactions(std::string p_client, std::vector<Transaction>& p_Transactions)
+bool DatabaseManager::GetCompletedTransactions(std::string p_client, std::vector<Transaction>& p_Transactions)
 {
 
 	std::shared_ptr<pugi::xml_document> doc = m_clientFiles[p_client];
@@ -213,9 +217,7 @@ bool DatabaseManager::GetRecordedTransactions(std::string p_client, std::vector<
 
 	if (doc == nullptr)
 	{
-		if (!_GetClientTransactionDoc(fullFileName, doc)) //Creates the document if not found
-			return false;	//Return false if creation failed
-		
+		_GetClientTransactionDoc(fullFileName, doc); //Creates the document if not found
 		m_clientFiles[p_client] = doc;
 	}
 	
@@ -296,6 +298,9 @@ bool DatabaseManager::_GetClientInfoDoc(std::shared_ptr<pugi::xml_document>& p_d
 		if (result.status != pugi::xml_parse_status::status_ok)
 		{
 			Output::Error("Unable to create file " + fileName);
+			
+			// Todo - Should probably throw an exception here
+			
 			return false; // No new file created
 		}
 	}
@@ -303,19 +308,18 @@ bool DatabaseManager::_GetClientInfoDoc(std::shared_ptr<pugi::xml_document>& p_d
 	return bNewFileCreated;
 }
 
-bool DatabaseManager::_GetClientTransactionDoc(std::string p_fullFilePath, std::shared_ptr<pugi::xml_document> p_doc)
+bool DatabaseManager::_GetClientTransactionDoc(std::string p_fullFilePath, std::shared_ptr<pugi::xml_document>& p_doc)
 {
+	if (p_doc == nullptr)
+	{
+		p_doc = std::make_shared<pugi::xml_document>();
+	}
 
 	pugi::xml_parse_result result = p_doc->load_file(p_fullFilePath.c_str());
-
 	bool bCreateFileNeeded = (result.status == pugi::xml_parse_status::status_file_not_found);
+	bool bNewFileCreated = false;
 	if (bCreateFileNeeded)
 	{
-		if (p_doc == nullptr)
-		{
-			p_doc = std::make_shared<pugi::xml_document>();
-		}
-
 		// add node with some name
 		pugi::xml_node Client = p_doc->append_child("Client");
 
@@ -324,6 +328,7 @@ bool DatabaseManager::_GetClientTransactionDoc(std::string p_fullFilePath, std::
 		pugi::xml_node TransactionHistory = Client.append_child("TransactionHistory");
 
 		p_doc->save_file(p_fullFilePath.c_str());
+		bNewFileCreated = true;
 	}
 
 	if (bCreateFileNeeded)
@@ -333,11 +338,14 @@ bool DatabaseManager::_GetClientTransactionDoc(std::string p_fullFilePath, std::
 		if (result.status != pugi::xml_parse_status::status_ok)
 		{
 			Output::Error("Unable to create file " + p_fullFilePath);
-			return false;
+			
+			// Todo - Should throw an exception here
+
+			return false; //No new file created...
 		}
 	}
 
-	return true;
+	return bNewFileCreated;
 }
 
 Transaction DatabaseManager::_CreateTransaction(const pugi::xml_node & p_transactionNode)

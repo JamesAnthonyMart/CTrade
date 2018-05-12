@@ -102,9 +102,11 @@ void ClientManager::_PollCompleteOrders(const shared_ptr<Client> p_client)
 	for (auto exchange : usedExchanges)
 	{
 		vector<Transaction> transactionHistory;
+		//Todo - Could rename this to something like: "GetTransactionsSince" and pass in the most recent transaction
+		//       Then we wouldn't need to waste time pruning.
 		ExchangeManager::Get().GetTransactionHistory(exchange, p_client->GetPublicKey(exchange), p_client->GetPrivateKey(exchange), transactionHistory);
 
-		_PruneForNewTransactions(p_client->GetID(), transactionHistory);
+		_PruneForNewlyCompletedTransactions(p_client->GetID(), transactionHistory);
 
 		// If there are any new transactions to record
 		if (transactionHistory.size() > 0)
@@ -115,9 +117,9 @@ void ClientManager::_PollCompleteOrders(const shared_ptr<Client> p_client)
 				transactionHistoryPtrs.push_back(std::make_shared<Transaction>(transactionHistory[i]));
 
 			// Write it to the client's file
-			DatabaseManager::Get().RecordTransactions(p_client->GetID(), transactionHistoryPtrs);
+			DatabaseManager::Get().RecordCompleteTransactions(p_client->GetID(), transactionHistoryPtrs);
 
-			std::cout << "   " << exchange << ": " << transactionHistory.size() << " closed transactions." << std::endl;
+			std::cout << "   " << exchange << ": " << transactionHistory.size() << " newly closed transactions recorded." << std::endl;
 		}
 	}
 }
@@ -130,7 +132,24 @@ void ClientManager::_PollOpenOrders(const std::shared_ptr<Client> p_client)
 	{
 		vector<Transaction> openTransactions;
 		ExchangeManager::Get().GetOpenTransactions(exchange, p_client->GetPublicKey(exchange), p_client->GetPrivateKey(exchange), openTransactions);
-		std::cout << "   " << exchange << ": " << openTransactions.size() << " open transactions." << std::endl;
+
+		if (openTransactions.size() > 0)
+		{
+			Output::Info(std::to_string(openTransactions.size()) + " open transaction(s):");
+			for (int i = 0; i < openTransactions.size(); ++i)
+			{
+				auto t = openTransactions[i];
+				if (t.GetTransactionType() == ELimitBuy)
+				{
+					Output::Info(t.GetExchange() + ": Buying " + std::to_string(t.GetQuantity()) + " " + t.GetToAsset() + " with " + t.GetFromAsset() + ".");
+				}
+				else if (t.GetTransactionType() == ELimitSell)
+				{
+					Output::Info(t.GetExchange() + ": Selling " + std::to_string(t.GetQuantity()) + " " + t.GetFromAsset() + " for " + t.GetToAsset() + ".");
+				}
+			}
+		}
+
 	}
 }
 
@@ -183,8 +202,20 @@ void ClientManager::_CheckArbitrageOpportunities(const std::shared_ptr<Client> p
 	}
 }
 
-void ClientManager::_PruneForNewTransactions(std::string p_clientName, std::vector<Transaction>& p_transactions)
+void ClientManager::_PruneForNewlyCompletedTransactions(std::string p_clientName, std::vector<Transaction>& p_transactions)
 {
 	std::vector<Transaction> recordedTransactions;
-	DatabaseManager::Get().GetRecordedTransactions(p_clientName, recordedTransactions);
+	DatabaseManager::Get().GetCompletedTransactions(p_clientName, recordedTransactions);
+	
+	std::vector<Transaction> newTransactionList;
+
+	std::for_each(p_transactions.begin(), p_transactions.end(), [&](Transaction t) 
+	{
+		if (std::find(recordedTransactions.begin(), recordedTransactions.end(), t) == recordedTransactions.end())
+		{
+			newTransactionList.push_back(t);
+		}
+	});
+
+	p_transactions = newTransactionList;
 }
